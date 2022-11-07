@@ -52,3 +52,43 @@ curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR126/080/SRR12603780/SRR12603780_1.
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR126/080/SRR12603780/SRR12603780_2.fastq.gz -o SRR12603780_normal_bladder_mucosa_2_2.fastq.gz
 
 ```
+
+It is always recomended to run QC on samples; so uisng the following code we can run `fastqc` on all samples
+
+```shell
+#!/bin/bash
+#SBATCH --account= # add your account name 
+#SBATCH --job-name=fastqc
+#SBATCH --qos=privileged
+#SBATCH --nodes=12                # number of Nodes
+#SBATCH --tasks-per-node=5        # number of MPI processes per node
+#SBATCH --mem 16g
+#SBATCH --time 24:00:00
+#SBATCH --output=fastqc.%J.out
+#SBATCH --error=fastqc.%J.err
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=# add your email address 
+
+
+module load fastqc
+
+for f in ./fastq/*.fastq.gz
+do
+ echo $f
+ fastqc $f --outdir ./qc_raw  --thread 12 --nogroup
+done
+```
+There is diffrences between sequence length of read 1 and read 2 for each samples; read 1 provides data on Cell barcode & UMI and read 2 has the insert sequence.
+To set up the directories for `cellranger count`;
+
+```shell
+for file in *.fastq.gz
+do
+  dir=${file%_*}
+  echo $dir
+  mkdir $dir
+  mv $file ./$dir
+done
+
+```
+The next step is to run `cellranger count` on each samples
