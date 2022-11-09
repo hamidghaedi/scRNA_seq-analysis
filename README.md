@@ -78,8 +78,13 @@ do
  fastqc $f --outdir ./qc_raw  --thread 12 --nogroup
 done
 ```
-There is diffrences between sequence length of read 1 and read 2 for each samples; read 1 provides data on Cell barcode & UMI and read 2 has the insert sequence.
-To set up the directories for `cellranger count`;
+There are diffrences between sequence length of read 1 and read 2 for each samples; read 1 provides data on Cell barcode & UMI and read 2 has the insert sequence. Files coming from SRA usually come with names like something_1_fastq.gz and something_2_fastq.gz . This [blog](https://kb.10xgenomics.com/hc/en-us/articles/115003802691) is  helpful to see what are the naming requirements of fastq files for cellranger tool. Briefly; 
+
+- incompatible file name: SRR9291388_1.fastq.gz
+
+- compatible file name: SRR9291388_S1_L001_R1_001.fastq.g
+
+So we need to change file names and also set up the directories for `cellranger count`;
 
 ```shell
 for file in *.fastq.gz
