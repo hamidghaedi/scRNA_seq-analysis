@@ -135,10 +135,110 @@ done
 
 ```
 
-<<<<<<< HEAD
 The next steps are mainly based on  Harvard Chan Bioinformatics Core materials on [scRNA-seq analysis](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) training. 
 
+##### Loading single-cell RNA-seq count data
 
-=======
-The next steps are based on the 
->>>>>>> 5dd36837cb91dc47e8809f9377ff562930dfc971
+```R
+# Setup the Seurat Object
+
+library(tidyverse)
+library(Seurat)
+library(patchwork)
+
+# create list of samples
+samples <- list.files("~/scRNA/")
+samples <- samples[grepl('^raw',samples,perl=T)]
+
+# read files inot Seurat objects
+for (file in samples){
+  seurat_data <- Read10X(data.dir = paste0("~/scRNA/", file))
+  seurat_obj <- CreateSeuratObject(counts = seurat_data, 
+                                   min.features = 100, 
+                                   project = paste0(sub('raw_','', file)))
+  assign(file, seurat_obj)
+}
+
+# now merging all objects inot one Seurat obj
+
+merged_seurat <- merge(x = raw_SRR12603783, 
+                       y = c(raw_SRR12603785,
+                             raw_SRR12603786,
+                             raw_SRR12603788,
+                             raw_SRR12603789,
+                             raw_SRR12603790),
+                       #Because the same cell IDs can be used for different samples, we add a sample-specific prefix 
+                       # to each of our cell IDs using the add.cell.id argument.
+                       add.cell.id = c("SRR12603783","SRR12603785","SRR12603786",
+                                       "SRR12603788","SRR12603789","SRR12603790"))
+
+
+```
+##### Quality control
+
+There are columns in the metadata:
+
+- orig.ident: this column will contain the sample identity if known. It will default to the value we provided for the project argument when loading in the data
+
+- nCount_RNA: represents the number of UMIs per cell. UMI (unique molecular identifiers) is used to determine whether a read is a biological or technical duplicate (PCR duplicate). Reads with different UMIs mapping to the same transcript were derived from different molecules and are biological duplicates - each read should be counted. Reads with the same UMI originated from the same molecule and are technical duplicates - the UMIs should be collapsed to be counted as a single read.
+
+
+- nFeature_RNA: represents the number of genes detected per cell
+
+Recommended features to add to metadata:
+
+- number of genes detected per UMI (or novelty score): more genes detected per UMI, more complex our data
+
+- mitochondrial ratio: this metric will give us a percentage of cell reads originating from the mitochondrial genes (coming from dying cells)
+
+```R
+# Explore merged metadata
+View(merged_seurat@meta.data)
+
+
+#Add number of genes per UMI for each cell to metadata
+merged_seurat$log10GenesPerUMI <- log10(merged_seurat$nFeature_RNA) / log10(merged_seurat$nCount_RNA)
+
+# Compute percent mito ratio
+merged_seurat$mitoRatio <- PercentageFeatureSet(object = merged_seurat, pattern = "^MT-")
+merged_seurat$mitoRatio <- merged_seurat@meta.data$mitoRatio / 100
+
+# Create metadata dataframe
+metadata <- merged_seurat@meta.data
+# Add cell IDs to metadata
+metadata$cells <- rownames(metadata)
+# adding sample type to metadata. The orginal file could be download from SRA explorer
+
+SampleType <- c("BLCA", "BLCA", "Normal", "BLCA", "BLCA", "BLCA", "BLCA", "BLCA", "BLCA", "Normal", "Normal")
+names(SampleType) <- c("SRR12603789", "SRR12603790", "SRR12603788", "SRR12603787", "SRR12603786", "SRR12603785", "SRR12603784", "SRR12603783", "SRR12603782", "SRR12603781", "SRR12603780")
+
+metadata <- metadata %>% 
+  left_join(enframe(SampleType), by = c("orig.ident" = "name"))
+
+# Rename columns
+metadata <- metadata %>%
+  dplyr::rename(seq_folder = orig.ident,
+                nUMI = nCount_RNA,
+                nGene = nFeature_RNA,
+                sample = value)
+
+# Add metadata back to Seurat object
+merged_seurat@meta.data <- metadata
+
+# Create .RData object to load at any time
+save(merged_seurat, file="~/scRNA/merged_filtered_seurat.RData")
+```
+
+###### cel count:
+The cell counts are determined by the number of unique cellular barcodes detected. 
+
+```R
+# Visualize the number of cell counts per sample
+metadata %>% 
+  	ggplot(aes(x=sample, fill=sample)) + 
+  	geom_bar() +
+  	theme_classic() +
+  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  	theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  	ggtitle("NCells")
+```
