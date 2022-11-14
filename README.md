@@ -96,7 +96,9 @@ do
 done
 
 ```
-The next step is to run `cellranger count` on each samples. Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy task. The following is what I came up with working best for me working on ComputeCanada cluster:
+The next step is to run `cellranger count` on each samples. There are different types of scRNA libs with different fastq files. This [blog](https://www.10xgenomics.com/support/single-cell-gene-expression/documentation/steps/sequencing/sequencing-requirements-for-single-cell-3) provide details on type of libs from 10X genomics. 
+
+Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy task. The following is what I came up with working best for me working on ComputeCanada cluster:
 
 ```shell
 #!/bin/bash
@@ -132,3 +134,5 @@ cellranger count --id=$ID \
 done
 
 ```
+
+The next steps are based on the 
