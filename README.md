@@ -135,6 +135,10 @@ done
 
 ```
 
+<<<<<<< HEAD
 The next steps are mainly based on  Harvard Chan Bioinformatics Core materials on [scRNA-seq analysis](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) training. 
 
 
+=======
+The next steps are based on the 
+>>>>>>> 5dd36837cb91dc47e8809f9377ff562930dfc971
