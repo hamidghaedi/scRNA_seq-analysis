@@ -96,4 +96,39 @@ do
 done
 
 ```
-The next step is to run `cellranger count` on each samples
+The next step is to run `cellranger count` on each samples. Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy task. The following is what I came up with working best for me working on ComputeCanada cluster:
+
+```shell
+#!/bin/bash
+#SBATCH --account=def-gooding-ab
+#SBATCH -J test_cellranger
+#SBATCH --export=ALL
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --signal=2
+#SBATCH --no-requeue
+### Alternatively: --ntasks=1 --cpus-per-task={NUM_THREADS}
+###   Consult with your cluster administrators to find the combination that
+###   works best for single-node, multi-threaded applications on your system.
+#SBATCH --mem=250G
+#SBATCH --time 48:00:00
+#SBATCH --output=test_cellranger.%J.out
+#SBATCH --error=test_cellranger.%J.err
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=qaedi.65@gmail.com
+
+
+module load cellranger
+
+cd /home/ghaedi/projects/def-gooding-ab/ghaedi/sc/raw
+for d in *
+do
+echo $d
+ID=${d:0:11}
+cellranger count --id=$ID \
+                 --transcriptome=/home/ghaedi/projects/def-gooding-ab/ghaedi/sc/refdata-gex-GRCh38-2020-A \
+                 --fastqs=$d
+                 --chemistry=SC3Pv2
+done
+
+```
