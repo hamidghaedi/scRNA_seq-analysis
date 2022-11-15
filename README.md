@@ -235,10 +235,10 @@ The cell counts are determined by the number of unique cellular barcodes detecte
 ```R
 # Visualize the number of cell counts per sample
 metadata %>% 
-  	ggplot(aes(x=sample, fill=sample)) + 
-  	geom_bar() +
-  	theme_classic() +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  	theme(plot.title = element_text(hjust=0.5, face="bold")) +
-  	ggtitle("NCells")
+  ggplot(aes(x=seq_folder, fill=sample)) + 
+  geom_bar() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  ggtitle("NCells")
 ```
