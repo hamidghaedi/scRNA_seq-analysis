@@ -332,7 +332,7 @@ filtered_seurat <- subset(merged_seurat,
 
 ```
 
-### Gene-level filtering
+#### Gene-level filtering
 
 Keep only genes which are expressed in 10 or more cells
 
