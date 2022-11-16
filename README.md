@@ -137,7 +137,7 @@ done
 
 The next steps are mainly based on  Harvard Chan Bioinformatics Core materials on [scRNA-seq analysis](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) training. 
 
-##### Loading single-cell RNA-seq count data
+### Loading single-cell RNA-seq count data
 
 ```R
 # Setup the Seurat Object
