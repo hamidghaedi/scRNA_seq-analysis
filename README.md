@@ -147,34 +147,39 @@ library(Seurat)
 library(patchwork)
 
 # create list of samples
-samples <- list.files("~/scRNA/")
-samples <- samples[grepl('^raw',samples,perl=T)]
+samples <- list.files("~/scRNA/filtered/")
+#samples <- samples[grepl('^filtered',samples,perl=T)]
 
 # read files inot Seurat objects
 for (file in samples){
-  seurat_data <- Read10X(data.dir = paste0("~/scRNA/", file))
+  print(paste0(file))
+  seurat_data <- Read10X(data.dir = paste0("~/scRNA/filtered/", file))
   seurat_obj <- CreateSeuratObject(counts = seurat_data, 
                                    min.features = 100, 
-                                   project = paste0(sub('raw_','', file)))
+                                   project = file)
   assign(file, seurat_obj)
 }
 
 # now merging all objects inot one Seurat obj
 
-merged_seurat <- merge(x = raw_SRR12603783, 
-                       y = c(raw_SRR12603785,
-                             raw_SRR12603786,
-                             raw_SRR12603788,
-                             raw_SRR12603789,
-                             raw_SRR12603790),
+merged_seurat <- merge(x = SRR12603780, 
+                       y = c(SRR12603782,
+                             SRR12603783,
+                             SRR12603784,
+                             SRR12603785,
+                             SRR12603786,
+                             SRR12603787,
+                             SRR12603788,
+                             SRR12603789,
+                             SRR12603790),
                        #Because the same cell IDs can be used for different samples, we add a sample-specific prefix 
                        # to each of our cell IDs using the add.cell.id argument.
-                       add.cell.id = c("SRR12603783","SRR12603785","SRR12603786",
-                                       "SRR12603788","SRR12603789","SRR12603790"))
+                       add.cell.id = samples)
+
 
 
 ```
-##### Quality control
+## Quality control
 
 There are columns in the metadata:
 
@@ -212,33 +217,206 @@ metadata$cells <- rownames(metadata)
 SampleType <- c("BLCA", "BLCA", "Normal", "BLCA", "BLCA", "BLCA", "BLCA", "BLCA", "BLCA", "Normal", "Normal")
 names(SampleType) <- c("SRR12603789", "SRR12603790", "SRR12603788", "SRR12603787", "SRR12603786", "SRR12603785", "SRR12603784", "SRR12603783", "SRR12603782", "SRR12603781", "SRR12603780")
 
-metadata <- metadata %>% 
-  left_join(enframe(SampleType), by = c("orig.ident" = "name"))
+metadata$sampleType <- stringr::str_replace_all(metadata$orig.ident, SampleType)
+
 
 # Rename columns
 metadata <- metadata %>%
   dplyr::rename(seq_folder = orig.ident,
                 nUMI = nCount_RNA,
                 nGene = nFeature_RNA,
-                sample = value)
+                sample = sampleType)
 
 # Add metadata back to Seurat object
 merged_seurat@meta.data <- metadata
 
 # Create .RData object to load at any time
 save(merged_seurat, file="~/scRNA/merged_filtered_seurat.RData")
-```
 
-###### cel count:
-The cell counts are determined by the number of unique cellular barcodes detected. 
+#
+```
+#### Cell counts per sample
 
 ```R
 # Visualize the number of cell counts per sample
-metadata %>% 
+bqcc <- metadata %>% 
   ggplot(aes(x=seq_folder, fill=sample)) + 
   geom_bar() +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   theme(plot.title = element_text(hjust=0.5, face="bold")) +
-  ggtitle("NCells")
+  ggtitle("NCells before QC")
+
+```
+#### UMI per cell
+
+```R
+# Visualize the number UMIs/transcripts per cell
+metadata %>% 
+  ggplot(aes(color=seq_folder, x=nUMI, fill= sample)) + 
+  geom_density(alpha = 0.2) + 
+  scale_x_log10() + 
+  theme_classic() +
+  ylab("Cell density") +
+  geom_vline(xintercept = 500)
+  
+```
+#### Genes detected per cell
+
+```R
+# Visualize the distribution of genes detected per cell via histogram
+metadata %>% 
+  ggplot(aes(color=seq_folder, x=nGene, fill= sample)) + 
+  geom_density(alpha = 0.2) + 
+  theme_classic() +
+  scale_x_log10() + 
+  geom_vline(xintercept = 300)
+```
+#### Novelty score
+
+```R
+# Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
+metadata %>%
+  ggplot(aes(x=log10GenesPerUMI, color = sample, fill=sample)) +
+  geom_density(alpha = 0.2) +
+  theme_classic() +
+  geom_vline(xintercept = 0.8)
+```
+
+#### Mitochondrial gene expression detected per cell
+
+```R
+# Visualize the distribution of mitochondrial gene expression detected per cell
+metadata %>% 
+  ggplot(aes(color=seq_folder, x=mitoRatio, fill=sample)) + 
+  geom_density(alpha = 0.2) + 
+  scale_x_log10() + 
+  theme_classic() +
+  geom_vline(xintercept = 0.2)
+```
+#### Checking for cells with low numbers of genes/UMIs
+
+```R
+# Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
+metadata %>% 
+  ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
+  geom_point() + 
+  scale_colour_gradient(low = "gray90", high = "black") +
+  stat_smooth(method=lm) +
+  scale_x_log10() + 
+  scale_y_log10() + 
+  theme_classic() +
+  geom_vline(xintercept = 500) +
+  geom_hline(yintercept = 250) +
+  facet_wrap(~sample)
+```
+### Filtering
+
+#### Cell-level filtering
+
+-nUMI > 500
+
+-nGene > 250
+
+-log10GenesPerUMI > 0.8
+
+-mitoRatio < 0.2
+
+```R
+# Filter out low quality cells using selected thresholds - these will change with experiment
+filtered_seurat <- subset(merged_seurat, 
+                          subset= nUMI >= 500 & 
+                          nGene >= 250 & 
+                          log10GenesPerUMI > 0.80 & 
+                          mitoRatio < 0.20)
+
+```
+
+### Gene-level filtering
+
+Keep only genes which are expressed in 10 or more cells
+
+```R
+# Extract counts
+counts <- GetAssayData(object = filtered_seurat, slot = "counts")
+
+# Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
+nonzero <- counts > 0
+# Sums all TRUE values and returns TRUE if more than 10 TRUE values per gene
+keep_genes <- Matrix::rowSums(nonzero) >= 10
+
+# Only keeping those genes expressed in more than 10 cells
+filtered_counts <- counts[keep_genes, ]
+# Reassign to filtered Seurat object
+filtered_seurat <- CreateSeuratObject(filtered_counts, meta.data = filtered_seurat@meta.data)
+
+# Create .RData object to load at any time
+save(filtered_seurat, file="seurat_filtered.RData")
+```
+
+#### Re-assess QC metrics
+
+```R
+
+# Save filtered subset to new metadata
+metadata_clean <- filtered_seurat@meta.data
+
+# Visualize the number of cell counts per sample
+aqcc <- metadata_clean %>% 
+  ggplot(aes(x=seq_folder, fill=sample)) + 
+  geom_bar() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  ggtitle("NCells after QC")
+
+# cell count before and after QC
+bqcc + aqcc
+
+
+# Visualize the number UMIs/transcripts per cell
+metadata_clean %>% 
+  ggplot(aes(color=seq_folder, x=nUMI, fill= sample)) + 
+  geom_density(alpha = 0.2) + 
+  scale_x_log10() + 
+  theme_classic() +
+  ylab("Cell density") +
+  geom_vline(xintercept = 500)
+
+# Visualize the distribution of genes detected per cell via histogram
+metadata_clean %>% 
+  ggplot(aes(color=seq_folder, x=nGene, fill= sample)) + 
+  geom_density(alpha = 0.2) + 
+  theme_classic() +
+  scale_x_log10() + 
+  geom_vline(xintercept = 300)
+
+# Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
+metadata_clean %>%
+  ggplot(aes(x=log10GenesPerUMI, color = sample, fill=sample)) +
+  geom_density(alpha = 0.2) +
+  theme_classic() +
+  geom_vline(xintercept = 0.8)
+
+# Visualize the distribution of mitochondrial gene expression detected per cell
+metadata_clean %>% 
+  ggplot(aes(color=seq_folder, x=mitoRatio, fill=sample)) + 
+  geom_density(alpha = 0.2) + 
+  scale_x_log10() + 
+  theme_classic() +
+  geom_vline(xintercept = 0.2)
+
+# Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
+metadata_clean %>% 
+  ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
+  geom_point() + 
+  scale_colour_gradient(low = "gray90", high = "black") +
+  stat_smooth(method=lm) +
+  scale_x_log10() + 
+  scale_y_log10() + 
+  theme_classic() +
+  geom_vline(xintercept = 500) +
+  geom_hline(yintercept = 250) +
+  facet_wrap(~sample)
+  
 ```
