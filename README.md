@@ -8,7 +8,7 @@ The repo has been update by the new data set coming from Zhaohui Chen *et al.* [
 " Eight primary bladder tumor tissues (2 low-grade bladder urothelial tumors, 6 high-grade bladder urothelial tumors) along with 3 adjacent normal mucosae, were involved in this cohort." 
 
 
-### 1) Data download on ComputeCanada 
+## 1) Data download on ComputeCanada 
 
 ```shell
 
@@ -96,6 +96,8 @@ do
 done
 
 ```
+## 2) Generating feature-sample expression matrix 
+
 The next step is to run `cellranger count` on each samples. There are different types of scRNA libs with different fastq files. This [blog](https://www.10xgenomics.com/support/single-cell-gene-expression/documentation/steps/sequencing/sequencing-requirements-for-single-cell-3) provide details on type of libs from 10X genomics. 
 
 Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy task. The following is what I came up with working best for me working on ComputeCanada cluster:
@@ -137,7 +139,7 @@ done
 
 The next steps are mainly based on  Harvard Chan Bioinformatics Core materials on [scRNA-seq analysis](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) training. 
 
-### Loading single-cell RNA-seq count data
+## 3) Loading single-cell RNA-seq count data
 
 ```R
 # Setup the Seurat Object
@@ -145,6 +147,8 @@ The next steps are mainly based on  Harvard Chan Bioinformatics Core materials o
 library(tidyverse)
 library(Seurat)
 library(patchwork)
+library(RCurl)
+library(cowplot)
 
 # create list of samples
 samples <- list.files("~/scRNA/filtered/")
@@ -179,7 +183,7 @@ merged_seurat <- merge(x = SRR12603780,
 
 
 ```
-## Quality control
+## 4) Quality control
 
 There are columns in the metadata:
 
@@ -420,3 +424,30 @@ metadata_clean %>%
   facet_wrap(~sample)
   
 ```
+## 5) Normalization and regressing out unwanted variation
+
+### Explore sources of unwanted variation
+
+Both biological source of variation (e.g. effect of cell cycle on transcriptome) and technical source should be explored and account for.
+
+```R
+# Normalize the counts
+# This normalization method is solely for the purpose of exploring the sources of variation in our data.
+seurat_phase <- NormalizeData(filtered_seurat)
+```
+### Evaluating effects of cell cycle
+
+```R
+# Load cell cycle markers
+load("data/cycle.rda")
+
+# Score cells for cell cycle
+seurat_phase <- CellCycleScoring(seurat_phase, 
+                                 g2m.features = g2m_genes, 
+                                 s.features = s_genes)
+
+# View cell cycle scores and phases assigned to cells                                 
+View(seurat_phase@meta.data)    
+```
+
+
