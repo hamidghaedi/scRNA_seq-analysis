@@ -439,7 +439,7 @@ seurat_phase <- NormalizeData(filtered_seurat)
 
 ```R
 # Load cell cycle markers
-load("data/cycle.rda")
+load("cycle.rda")
 
 # Score cells for cell cycle
 seurat_phase <- CellCycleScoring(seurat_phase, 
@@ -447,7 +447,38 @@ seurat_phase <- CellCycleScoring(seurat_phase,
                                  s.features = s_genes)
 
 # View cell cycle scores and phases assigned to cells                                 
-View(seurat_phase@meta.data)    
+View(seurat_phase@meta.data) 
+
+# Identify the most variable genes and scaling them
+seurat_phase <- FindVariableFeatures(seurat_phase, 
+                     selection.method = "vst",
+                     nfeatures = 2000, 
+                     verbose = FALSE)
+		     
+# Scale the counts
+seurat_phase <- ScaleData(seurat_phase)
+
+# Perform PCA
+seurat_phase <- RunPCA(seurat_phase)
+
+# Plot the PCA colored by cell cycle phase
+DimPlot(seurat_phase,
+        reduction = "pca",
+        group.by= "Phase",
+        split.by = "Phase")
 ```
+### SCTransform
+
+This function is seful for automatic normalization and regressing out sources of unwanted variation. This method is more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes.
+
+```R
+# adjust the limit for allowable object sizes within R
+options(future.globals.maxSize = 4000 * 1024^2)
+
+# Split seurat object by condition to perform cell cycle scoring and SCT on all samples
+split_seurat <- SplitObject(seurat_phase, split.by = "sample")
+
+split_seurat <- split_seurat[c("ctrl", "stim")]
+
 
 
