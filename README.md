@@ -487,7 +487,7 @@ Integrate or align samples across groups using shared highly variable genes
 If cells cluster by sample, condition, batch, dataset, or even modality (scRNA, scATAC-seq), this integration step can significantly improve the clustering and the downstream analyses.
 So we want to integrate normal samples together and BLCA sample together , so downstream analysis would make more sense to do. For integration, we have to keep samples as separate objects and transform them as that is what is required for integration.
 
-```
+```R
 # adjust the limit for allowable object sizes within R
 options(future.globals.maxSize = 4000 * 1024^2)
 
