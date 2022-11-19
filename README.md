@@ -167,7 +167,8 @@ for (file in samples){
 # now merging all objects inot one Seurat obj
 
 merged_seurat <- merge(x = SRR12603780, 
-                       y = c(SRR12603782,
+                       y = c(SRR12603781,
+                             SRR12603782,
                              SRR12603783,
                              SRR12603784,
                              SRR12603785,
@@ -428,18 +429,15 @@ metadata_clean %>%
 
 ### Explore sources of unwanted variation
 
-Both biological source of variation (e.g. effect of cell cycle on transcriptome) and technical source should be explored and account for.
+Both biological source of variation (e.g. effect of cell cycle on transcriptome) and technical source should be explored and account for. In early version of Seurat one needs to normalize data, find variable features and then scale data while setting a variable like mitochondrial contamination or cell cycle stage to be regressed out. So here is code for doing these steps to mitigate cell cycle stage effects on the dataset, however a newer function in Seurat has automated all of these steps (`SCTtansform()`).
 
 ```R
 # Normalize the counts
 # This normalization method is solely for the purpose of exploring the sources of variation in our data.
-seurat_phase <- NormalizeData(filtered_seurat)
-```
-### Evaluating effects of cell cycle
+seurat_phase <- NormalizeData(filtered_seurat, normalization.method = "LogNormalize", scale.factor = 10000)
 
-```R
 # Load cell cycle markers
-load("cycle.rda")
+load("C:/Users/qaedi/OneDrive - Queen's University/Documents/scRNA/cycle.rda")
 
 # Score cells for cell cycle
 seurat_phase <- CellCycleScoring(seurat_phase, 
@@ -447,38 +445,88 @@ seurat_phase <- CellCycleScoring(seurat_phase,
                                  s.features = s_genes)
 
 # View cell cycle scores and phases assigned to cells                                 
-View(seurat_phase@meta.data) 
+#View(seurat_phase@meta.data) 
 
 # Identify the most variable genes and scaling them
 seurat_phase <- FindVariableFeatures(seurat_phase, 
                      selection.method = "vst",
                      nfeatures = 2000, 
-                     verbose = FALSE)
-		     
+                     verbose = TRUE)
+                     
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(seurat_phase), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(seurat_phase)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+
+
+# Check quartile values for mitoRatio, we will use this variable later to mitigate unwanted source of variation in dataset
+summary(seurat_phase@meta.data$mitoRatio)
+
+# Turn mitoRatio into categorical factor vector based on quartile values
+seurat_phase@meta.data$mitoFr <- cut(seurat_phase@meta.data$mitoRatio, 
+                   breaks=c(-Inf, 0.015, 0.025, 0.047, Inf), 
+                   labels=c("Low","Medium","Medium high", "High"))
+
+
+
 # Scale the counts
+# This step is essential for PCA , clustering and heatmap generation
 seurat_phase <- ScaleData(seurat_phase)
-
-# Perform PCA
-seurat_phase <- RunPCA(seurat_phase)
-
-# Plot the PCA colored by cell cycle phase
-DimPlot(seurat_phase,
-        reduction = "pca",
-        group.by= "Phase",
-        split.by = "Phase")
+saveRDS(seurat_phase, "seurat_phase.rds")
 ```
 ### SCTransform
 
-This function is seful for automatic normalization and regressing out sources of unwanted variation. This method is more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes.
+This function is useful for automatic normalization and regressing out sources of unwanted variation. This method is more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes. In practice `SCTransform`  single command replaces `NormalizeData()`, `ScaleData()`, and `FindVariableFeatures()`. Since we have two group of sample we will run SCTransform on each groups after doing "integration".
 
-```R
+
+### Integration 
+Integrate or align samples across groups using shared highly variable genes
+If cells cluster by sample, condition, batch, dataset, or even modality (scRNA, scATAC-seq), this integration step can significantly improve the clustering and the downstream analyses.
+So we want to integrate normal samples together and BLCA sample together , so downstream analysis would make more sense to do. For integration, we have to keep samples as separate objects and transform them as that is what is required for integration.
+
+```
 # adjust the limit for allowable object sizes within R
 options(future.globals.maxSize = 4000 * 1024^2)
 
-# Split seurat object by condition to perform cell cycle scoring and SCT on all samples
+# Split seurat object by group
 split_seurat <- SplitObject(seurat_phase, split.by = "sample")
 
-split_seurat <- split_seurat[c("ctrl", "stim")]
+# then normalize by SCTansform
+for (i in 1:length(split_seurat)) {
+    split_seurat[[i]] <- SCTransform(split_seurat[[i]], vars.to.regress = c("mitoRatio", "S.Score", "G2M.Score"))
+    }
+    
+# Select the most variable features to use for integration
+integ_features <- SelectIntegrationFeatures(object.list = split_seurat, 
+                                            nfeatures = 3000) 
 
 
+# Prepare the SCT list object for integration
+split_seurat <- PrepSCTIntegration(object.list = split_seurat, 
+                                   anchor.features = integ_features)
+                                   
+# Find best buddies (using canonical correlation analysis or CCA) - can take a while to run
+integ_anchors <- FindIntegrationAnchors(object.list = split_seurat, 
+                                        normalization.method = "SCT", 
+                                        anchor.features = integ_features)
+# Integrate across conditions
+seurat_integrated <- IntegrateData(anchorset = integ_anchors, 
+                                   normalization.method = "SCT")
+                                   
+```
+### Clustering 
+After normalization and integration, we can proceed to PCA and UMAP/t-SNE for clustering 
 
+```R
+# Run PCA
+seurat_integrated <- RunPCA(object = seurat_integrated)
+
+# Plot PCA
+png(filename = "PCA_integrated.png", width = 16, height = 8.135, units = "in", res = 300)
+PCAPlot(seurat_integrated,
+        split.by = "sample")
+dev.off()
+```
