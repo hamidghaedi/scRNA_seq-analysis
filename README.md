@@ -516,9 +516,15 @@ integ_anchors <- FindIntegrationAnchors(object.list = split_seurat,
 seurat_integrated <- IntegrateData(anchorset = integ_anchors, 
                                    normalization.method = "SCT")
                                    
+# Check assays in the object:
+split_seurat$Normal@assays
+
+                                   
 ```
-### Clustering 
-After normalization and integration, we can proceed to PCA and UMAP/t-SNE for clustering 
+### Integration check 
+After normalization and integration, we can proceed to PCA and UMAP/t-SNE to see effect of integration.
+
+
 
 ```R
 # Run PCA
@@ -529,4 +535,111 @@ png(filename = "PCA_integrated.png", width = 16, height = 8.135, units = "in", r
 PCAPlot(seurat_integrated,
         split.by = "sample")
 dev.off()
+
+# Run UMAP
+seurat_integrated <- RunUMAP(seurat_integrated, 
+                             dims = 1:40,
+			     reduction = "pca")
+
+# Plot UMAP 
+png(filename = "UMAP_integrated.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(seurat_integrated, split.by = "sample")
+dev.off()
 ```
+
+### Clustering cells based on top PCs (metagenes)
+
+#### Identify significant PCs
+
+For new method like SCTransform it is not needed to calculate the number of PCs for clustering. However older methods could not efficiently removed technical biases , so using them it was necessary to have some idea about the number of PCs that can capture most of information in the dataset.
+
+```R
+# Explore heatmap of PCs
+png(filename = "PCA_integrated_2.png", width = 16, height = 8.135, units = "in", res = 300)
+DimHeatmap(seurat_integrated, 
+           dims = 1:9, 
+           cells = 500, 
+           balanced = TRUE)
+dev.off()
+
+# Printing out the most variable genes driving PCs
+print(x = seurat_integrated[["pca"]], 
+      dims = 1:10, 
+      nfeatures = 5)
+      
+# To determine how many Pcs should be considered for clustering:
+# Plot the elbow plot
+png(filename = "elbow.png", width = 16, height = 8.135, units = "in", res = 300)
+ElbowPlot(object = seurat_integrated, 
+          ndims = 40)
+dev.off()
+
+# to make it more quantitative :
+# Determine percent of variation associated with each PC
+pct <- seurat_integrated[["pca"]]@stdev / sum(seurat_integrated[["pca"]]@stdev) * 100
+
+# Calculate cumulative percents for each PC
+cumu <- cumsum(pct)
+
+# Determine which PC exhibits cumulative percent greater than 90% and % variation associated with the PC as less than 5
+co1 <- which(cumu > 90 & pct < 5)[1]
+
+co1
+
+# Determine the difference between variation of PC and subsequent PC
+co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+
+# last point where change of % of variation is more than 0.1%.
+co2
+
+# Minimum of the two calculation is the optimal number of PC to pick.
+pcs <- min(co1, co2)
+
+pcs
+
+```
+
+#### Cluster the cells
+
+```R
+# Determine the K-nearest neighbor graph
+seurat_integrated <- FindNeighbors(object = seurat_integrated, 
+                                dims = 1:40)
+                                
+Find clusters
+# Determine the clusters for various resolutions                                
+seurat_integrated <- FindClusters(object = seurat_integrated,
+                               resolution = c(0.4, 0.6, 0.8, 1.0, 1.4))
+                               
+# Determine the clusters for various resolutions                                
+seurat_integrated <- FindClusters(object = seurat_integrated,
+                               resolution = c(0.4, 0.6, 0.8, 1.0, 1.4))
+
+# Explore resolutions
+head(seurat_integrated@meta.data)
+
+# Assign identity of clusters
+Idents(object = seurat_integrated) <- "integrated_snn_res.0.8"
+
+# Plot the UMAP
+png(filename = "umap_cluster_with_label.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(seurat_integrated,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
+```
+#### Clustering quality control
+
+- Segregation of clusters by sample
+
+```R
+# Extract identity and sample information from seurat object to determine the number of cells per cluster per sample
+n_cells <- FetchData(seurat_integrated, 
+                     vars = c("ident", "orig.ident")) %>%
+        dplyr::count(ident, orig.ident) %>%
+        tidyr::spread(ident, n)
+
+# View table
+head(n_cells)
+                                
