@@ -1,12 +1,6 @@
 # scRNA sequencing analysis
 
-Steps toward making sense of single cell RNA sequencing data.
-
-#### Update;
-The repo has been update by the new data set coming from Zhaohui Chen *et al.* [paper](https://www.nature.com/articles/s41467-020-18916-5#Sec12) published in 11, Article number: 5077 (2020). Sampels ;
-
-" Eight primary bladder tumor tissues (2 low-grade bladder urothelial tumors, 6 high-grade bladder urothelial tumors) along with 3 adjacent normal mucosae, were involved in this cohort." 
-
+This repo presents steps needed to make sense of single cell RNA sequencing (scRNA) data. I used a scRNA dataset coming from Zhaohui Chen *et al.* [paper](https://www.nature.com/articles/s41467-020-18916-5#Sec12) published in Nature Communications 11, Article number: 5077 (2020). The cohort consisted of eight primary bladder tumor tissues (2 low-grade bladder urothelial tumors, six high-grade bladder urothelial tumors) along with 3 adjacent normal mucosae. In SRA datasets are under BioProject [PRJNA662018](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA662018) and SRA-explorer can be used to download the data. 
 
 ## 1) Data download on ComputeCanada 
 
