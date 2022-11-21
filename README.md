@@ -528,7 +528,44 @@ After normalization and integration, we can proceed to PCA and UMAP/t-SNE to see
 
 ```R
 # Run PCA
-seurat_integrated <- RunPCA(object = seurat_integrated)
+seurat_integrated <- RunPCA(object = seurat_integrated, verbose = TRUE)
+# PC_ 1
+# Positive:  IGFBP7, MGP, SPARC, VIM, SPARCL1, CALD1, IFITM3, A2M, COL4A1, COL1A2
+#            COL4A2, TAGLN, COL6A2, BGN, TCF4, COL3A1, CCL2, MT2A, NNMT, COL1A1
+#            MYL9, LGALS1, DCN, SELENOM, CCN1, ADAMTS9, CCN2, TIMP1, IGFBP4, LUM
+# Negative:  KRT19, KRT13, CD52, S100P, RPS19, CLDN4, FXYD3, PSCA, TACSTD2, CSTB
+#            PTPRC, KRT7, RPS18, KRT17, LYPD3, RPL41, CD3D, CCL5, RPS27, SFN
+#            FABP5, SPINK1, GDF15, AQP3, HCST, TRAC, SNCG, ADIRF, ELF3, TRBC2
+# PC_ 2
+# Positive:  PLVAP, CALCRL, PCAT19, MCTP1, AQP1, VWF, CD74, PECAM1, RAMP2, LDB2
+#            RAMP3, FLT1, ZNF385D, TCF4, CLDN5, ACKR1, HSPG2, SPARCL1, EMCN, ADGRL4
+#            SLCO2A1, HLA-DRA, SELE, DOCK4, ECSCR, CCL14, HLA-DRB1, ERG, PCDH17, GNG11
+# Negative:  COL1A2, COL3A1, COL1A1, TAGLN, DCN, LUM, BGN, COL6A2, C1R, SOD3
+#            MFAP4, RARRES2, C1S, MYL9, TPM2, PRKG1, CRYAB, ACTA2, COL6A3, LGALS1
+#            CALD1, COL6A1, TIMP1, SERPINF1, PCOLCE, AEBP1, C11orf96, MEG3, FBLN1, GPC6
+# PC_ 3
+# Positive:  CCL5, CD52, B2M, PTPRC, IL32, SRGN, CD3D, HSPA1A, NKG7, GZMA
+#            TRAC, ARHGAP15, HCST, RGS1, CXCR4, SAMSN1, CCL4, CD7, RGS2, CORO1A
+#            CD2, CRIP1, CST7, CD69, STAT4, FYN, TMSB4X, DNAJB1, PTPN22, CD3E
+# Negative:  ADIRF, SPINK1, IFI27, CSTB, S100P, KRT19, FXYD3, CLDN4, CCT2, CCND1
+#            PSCA, S100A6, SNCG, UCA1, KRT17, YEATS4, KRT7, KRT13, TACSTD2, GDF15
+#            RAB3IP, KRT18, HES1, GAPDH, S100A2, PLVAP, RAMP2, S100A14, FABP5, TM4SF1
+# PC_ 4
+# Positive:  IL32, CD3D, CCL5, CRIP1, TRAC, FYN, COL4A1, COL4A2, CD2, GZMA
+#            CD7, CALD1, IGFBP7, TRBC2, MCAM, NDUFA4L2, CD3E, NKG7, COL18A1, RGS5
+#            SKAP1, MYL9, ITGA1, CYTOR, CD247, SPARC, TRBC1, MAP1B, ACTA2, CACNA1C
+# Negative:  HLA-DRA, CD74, TYROBP, HLA-DRB1, HLA-DPB1, FCER1G, HLA-DPA1, AIF1, HLA-DQA1, FTL
+#            LYZ, IFI30, C1QA, HLA-DQB1, C1QB, C1QC, MS4A6A, LST1, APOE, CD14
+#            TMEM176B, S100A9, HLA-DMA, FCGR2A, CXCL8, SPI1, FTH1, CD68, PSAP, CST3
+# PC_ 5
+# Positive:  LUM, MMP2, PTGDS, EMP1, DCN, RARRES2, KRT13, SERPINF1, CXCL1, CXCL8
+#            LSAMP, COL8A1, TM4SF1, AREG, C1S, PDPN, CFD, APOD, SOD2, CTSK
+#            CLMP, KRT17, MFAP4, LYPD3, VCAN, PLAUR, TSHZ2, PLAT, PDGFRA, C1R
+# Negative:  RGS5, NDUFA4L2, ACTA2, PPP1R14A, MYL9, TAGLN, FRZB, CRIP1, CALD1, GJA4
+#            MCAM, COL18A1, MYH11, TYROBP, TPPP3, COX4I2, PRKG1, IGFBP7, COL4A1, COL4A2
+#            CDH6, HIGD1B, AIF1, TPM2, PTP4A3, FCER1G, WFDC1, HEYL, MYLK, HLA-DRA
+
+
 
 # Plot PCA
 png(filename = "PCA_integrated.png", width = 16, height = 8.135, units = "in", res = 300)
@@ -539,7 +576,8 @@ dev.off()
 # Run UMAP
 seurat_integrated <- RunUMAP(seurat_integrated, 
                              dims = 1:40,
-			     reduction = "pca")
+                             reduction = "pca",
+                             verbose = TRUE)
 
 # Plot UMAP 
 png(filename = "UMAP_integrated.png", width = 16, height = 8.135, units = "in", res = 300)
@@ -602,24 +640,24 @@ pcs
 #### Cluster the cells
 
 ```R
+# to check what is active assay
+DefaultAssay(object = seurat_integrated)
+
 # Determine the K-nearest neighbor graph
 seurat_integrated <- FindNeighbors(object = seurat_integrated, 
-                                dims = 1:40)
+                                dims = 1:18)
                                 
 Find clusters
 # Determine the clusters for various resolutions                                
 seurat_integrated <- FindClusters(object = seurat_integrated,
                                resolution = c(0.4, 0.6, 0.8, 1.0, 1.4))
                                
-# Determine the clusters for various resolutions                                
-seurat_integrated <- FindClusters(object = seurat_integrated,
-                               resolution = c(0.4, 0.6, 0.8, 1.0, 1.4))
 
 # Explore resolutions
 head(seurat_integrated@meta.data)
 
 # Assign identity of clusters
-Idents(object = seurat_integrated) <- "integrated_snn_res.0.8"
+Idents(object = seurat_integrated) <- "integrated_snn_res.0.4"
 
 # Plot the UMAP
 png(filename = "umap_cluster_with_label.png", width = 16, height = 8.135, units = "in", res = 300)
@@ -631,14 +669,48 @@ dev.off()
 ```
 #### Clustering quality control
 
+After clustering, we need to make sure that the assigned clusters are true representative of biological clusters (cell clusters) not due to technical or unwanted source of variation (like cell cycle stages). Also , in this step we need to identify cell type for each cluster based on the known cell type markers. 
+
 - Segregation of clusters by sample
 
 ```R
 # Extract identity and sample information from seurat object to determine the number of cells per cluster per sample
+
+library(dplyr)
+library(tidyr)
+
+# n_cells <- FetchData(seurat_integrated, 
+#                      vars = c("ident", "orig.ident")) %>%
+#         dplyr::count(ident, orig.ident) %>%
+#         tidyr::spread(ident, n)
+
 n_cells <- FetchData(seurat_integrated, 
-                     vars = c("ident", "orig.ident")) %>%
-        dplyr::count(ident, orig.ident) %>%
-        tidyr::spread(ident, n)
+                      vars = c("ident", "orig.ident"))
+n_cells <- dplyr::count(n_cells, ident, orig.ident)
+n_cells <- tidyr::spread(n_cells, ident, n)
+
+
+
+#Ading sample data from paper; we expect to see samples from same group have more or less similar number of cells in each cluster. So normal samples should show similar patters: SRR12603780, SRR12603781, and SRR12603788.
+
+
+
+sampleData<- data.frame(tibble::tribble(
+     ~sample_id, ~gender, ~age, ~Grade, ~Invasiveness, ~Surgery_Type, ~Tumor_size_cm,
+  "SRR12603790",     "M",  67L,  "low", "Noninvasive",       "TURBT",          "1.9",
+  "SRR12603789",     "M",  70L,  "low", "Noninvasive",       "TURBT",          "2.5",
+  "SRR12603787",     "M",  63L, "high", "Noninvasive",  "Cystectomy",          "3.5",
+  "SRR12603786",     "F",  59L, "high", "Noninvasive",  "Cystectomy",          "4.7",
+  "SRR12603785",     "M",  57L, "high",    "Invasive",  "Cystectomy",          "5.1",
+  "SRR12603784",     "M",  75L, "high",    "Invasive",  "Cystectomy",          "4.3",
+  "SRR12603783",     "M",  77L, "high",    "Invasive",  "Cystectomy",          "4.5",
+  "SRR12603782",     "F",  72L, "high",    "Invasive",  "Cystectomy",          "4.1",
+  "SRR12603781",     "M",  67L,    "-",           "-",       "TURBT",            "-",
+  "SRR12603788",     "M",  75L,    "-",           "-",  "Cystectomy",            "-",
+  "SRR12603780",     "M",  63L,    "-",           "-",  "Cystectomy",            "-"
+  ))
+
+
 
 # View table
 head(n_cells)
