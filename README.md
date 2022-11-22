@@ -977,7 +977,8 @@ VlnPlot(object = seurat_integrated,
 dev.off() 
 ```
 
-So some other clusters are also showing expression for identified clusters.
+So some other clusters are also showing expression for the identified markers. Clusters 0,2,3,9,10,14,18 and 19 showing similar pattern of expression for top 10 basal cell markers.
+Actually these are mostly BLCA specific cluster which may imply that the tumor subtype of samples included in the study was basal bladder cancer. 
 
 | gene     | cells                                | 0   | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  | 11  | 12  | 13  | 14  | 15  | 16  | 17  | 18  | 19  | 20  | 21  |
 |---|------|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -994,17 +995,20 @@ So some other clusters are also showing expression for identified clusters.
 
 -   Identifying gene markers for each cluster
 
-\`\`\`R \# Determine differentiating markers for CD4+ T cell cd4_tcells \<- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
+```R
+# Determine differentiating markers for CD4+ T cell cd4_tcells <- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
 
 # Add gene symbols to the DE table
 
-cd4_tcells \<- cd4_tcells %\>% rownames_to_column(var = "gene") %\>% left_join(y = unique(annotations[, c("gene_name", "description")]), by = c("gene" = "gene_name"))
+cd4_tcells <- cd4_tcells %>% 
+        rownames_to_column(var = "gene") %>% 
+        left_join(y = unique(annotations[, c("gene_name", "description")]), by = c("gene" = "gene_name"))
 
 # Reorder columns and sort by padj
 
-cd4_tcells \<- cd4_tcells[, c(1, 3:5,2,6:7)]
+cd4_tcells <- cd4_tcells[, c(1, 3:5,2,6:7)]
 
-cd4_tcells \<- cd4_tcells %\>% dplyr::arrange(p_val_adj)
+cd4_tcells <- cd4_tcells %\>% dplyr::arrange(p_val_adj)
 
 # View data
 
@@ -1016,7 +1020,7 @@ FeaturePlot(seurat_integrated, reduction = "umap", features = c("CREM", "CD69", 
 
 # Rename all identities
 
-seurat_integrated \<- RenameIdents(object = seurat_integrated, "0" = "Naive or memory CD4+ T cells", "1" = "CD14+ monocytes", "2" = "Naive or memory CD4+ T cells", "3" = "CD14+ monocytes", "4" = "CD4+ T cells", "5" = "CD8+ T cells", "6" = "B cells", "7" = "Stressed cells / Activated T cells", "8" = "NK cells", "9" = "FCGR3A+ monocytes", "10" = "CD4+ T cells", "11" = "B cells", "12" = "NK cells", "13" = "CD8+ T cells", "14" = "CD14+ monocytes", "15" = "Conventional dendritic cells", "16" = "Megakaryocytes", "17" = "B cells", "18" = "CD4+ T cells", "19" = "Plasmacytoid dendritic cells", "20" = "Mast cells")
+seurat_integrated <- RenameIdents(object = seurat_integrated, "0" = "Naive or memory CD4+ T cells", "1" = "CD14+ monocytes", "2" = "Naive or memory CD4+ T cells", "3" = "CD14+ monocytes", "4" = "CD4+ T cells", "5" = "CD8+ T cells", "6" = "B cells", "7" = "Stressed cells / Activated T cells", "8" = "NK cells", "9" = "FCGR3A+ monocytes", "10" = "CD4+ T cells", "11" = "B cells", "12" = "NK cells", "13" = "CD8+ T cells", "14" = "CD14+ monocytes", "15" = "Conventional dendritic cells", "16" = "Megakaryocytes", "17" = "B cells", "18" = "CD4+ T cells", "19" = "Plasmacytoid dendritic cells", "20" = "Mast cells")
 
 # Plot the UMAP
 
@@ -1033,3 +1037,4 @@ DimPlot(object = seurat_subset_labeled, reduction = "umap", label = TRUE, label.
 # Save final R object
 
 write_rds(seurat_integrated, path = "results/seurat_labelled.rds")
+```
