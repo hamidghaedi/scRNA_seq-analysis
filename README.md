@@ -917,46 +917,84 @@ data.table::fwrite(top10, "top10_conserved_markers.csv")
 
 I looked up for genes in the [PanglaoDB](https://panglaodb.se/index.html) database and here is the result:
 
-|cluster_id     | gene | avg_fc | cell_type                      |
-|-----|------------|------|--------------------------------------|
-| 0   | DENND2C    | 1.14 | Basal cells                          |
-| 0   | C19orf33   | 1.14 | Luminal epithelial cells             |
-| 0   | SFN        | 1.22 | Basal cells/Epithelial cells/Ductal  |
-| 0   | KRT13      | 1.38 | Luminal epithelial cells/Basal cells |
-| 0   | NEDD4L     | 1.18 | Basal cell                           |
-| 0   | AQP3       | 1.16 | Basal cell                           |
-| 0   | CLDN4      | 1.32 | Basal cell                           |
-| 0   | TACSTD2    | 1.2  | Basal cell/Ductal cell               |
-| 0   | KRT19      | 1.11 | Basal cell                           |
-| 0   | KRT17      | 1.24 | Basal cell                           |
-| 21  | S100A8     | 1.37 | Dendritic cells                      |
-| 21  | MNDA       | 0.91 | Dendritic cells                      |
-| 21  | S100A9     | 1.64 | Dendritic cells                      |
-| 21  | TYROBP     | 1.38 | Dendritic cells                      |
-| 21  | BCL2A1     | 0.98 | Dendritic cells                      |
-| 21  | LST1       | 1.22 | Dendritic cells                      |
-| 21  | G0S2       | 1.33 | Dendritic cells                      |
-| 21  | AIF1       | 1.08 | Dendritic cells                      |
-| 21  | CXCL8      | 1.16 | Dendritic cells                      |
-| 21  | FCER1G     | 0.92 | Dendritic cells                      |
+| cluster_id | gene     | avg_fc | cell_type                            |
+|------------|----------|--------|--------------------------------------|
+| 0          | DENND2C  | 1.14   | Basal cells                          |
+| 0          | C19orf33 | 1.14   | Luminal epithelial cells             |
+| 0          | SFN      | 1.22   | Basal cells/Epithelial cells/Ductal  |
+| 0          | KRT13    | 1.38   | Luminal epithelial cells/Basal cells |
+| 0          | NEDD4L   | 1.18   | Basal cell                           |
+| 0          | AQP3     | 1.16   | Basal cell                           |
+| 0          | CLDN4    | 1.32   | Basal cell                           |
+| 0          | TACSTD2  | 1.2    | Basal cell/Ductal cell               |
+| 0          | KRT19    | 1.11   | Basal cell                           |
+| 0          | KRT17    | 1.24   | Basal cell                           |
+| 21         | S100A8   | 1.37   | Dendritic cells                      |
+| 21         | MNDA     | 0.91   | Dendritic cells                      |
+| 21         | S100A9   | 1.64   | Dendritic cells                      |
+| 21         | TYROBP   | 1.38   | Dendritic cells                      |
+| 21         | BCL2A1   | 0.98   | Dendritic cells                      |
+| 21         | LST1     | 1.22   | Dendritic cells                      |
+| 21         | G0S2     | 1.33   | Dendritic cells                      |
+| 21         | AIF1     | 1.08   | Dendritic cells                      |
+| 21         | CXCL8    | 1.16   | Dendritic cells                      |
+| 21         | FCER1G   | 0.92   | Dendritic cells                      |
 
 -   Visualizing marker genes
 
 ``` r
-# Plot interesting marker gene expression for cluster 20
+# Plot interesting marker gene expression for cluster 0
+png(filename = "umap_cluster0_basal_cells.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(object = seurat_integrated, 
-                        features = c("TPSAB1", "TPSB2", "FCER1A", "GATA1", "GATA2"),
+                        features = c("DENND2C", "C19orf33", "SFN", "KRT13", "NEDD4L",
+                        "AQP3", "CLDN4", "TACSTD2", "KRT19", "KRT17"),
                          sort.cell = TRUE,
                          min.cutoff = 'q10', 
                          label = TRUE,
                          repel = TRUE)
-# Vln plot - cluster 20
+dev.off()
+
+
+# Vln plot - cluster 0
+png(filename = "cluster_violin_plot_DENND2C_C19orf33.png", width = 16, height = 8.135, units = "in", res = 300)
 VlnPlot(object = seurat_integrated, 
-        features = c("TPSAB1", "TPSB2", "FCER1A", "GATA1", "GATA2"))
-        
+        features = c("DENND2C", "C19orf33"))
+dev.off() 
+
+png(filename = "cluster_violin_plot_NEDD4L_SFN.png", width = 16, height = 8.135, units = "in", res = 300)
+VlnPlot(object = seurat_integrated, 
+        features = c("NEDD4L", "SFN"))
+dev.off() 
+
+png(filename = "cluster_violin_plot_KRTs.png", width = 16, height = 8.135, units = "in", res = 300)
+VlnPlot(object = seurat_integrated, 
+        features = c("KRT13", "KRT17", "KRT19"))
+dev.off() 
+
+png(filename = "cluster_violin_plot_AQP3_CLDN4_TACSTD2.png", width = 16, height = 8.135, units = "in", res = 300)
+VlnPlot(object = seurat_integrated, 
+        features = c( "AQP3", "CLDN4", "TACSTD2"))
+dev.off() 
 ```
 
--   Identifying gene markers for each cluster \`\`\`R \# Determine differentiating markers for CD4+ T cell cd4_tcells \<- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
+So some other clusters are also showing expression for identified clusters.
+
+| gene     | cells                                | 0   | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  | 11  | 12  | 13  | 14  | 15  | 16  | 17  | 18  | 19  | 20  | 21  |
+|---|------|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| DENND2C  | Basal cells                          | \+  |     | \+  | \+  |     |     |     |     |     | \+  | \+  |     |     |     | \+  |     |     |     | \+  | \+  |     | \+  |
+| C19orf33 | Luminal epithelial cells             | \+  |     | \+  | \+  |     |     |     |     |     | \+  | \+  |     |     |     | \+  |     |     |     |     |     |     |     |
+| SFN      | Basal cells/Epithelial cells/Ductal  | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  |     |     |     | \+  | \+  |     |     | \+  | \+  |     | \+  |
+| KRT13    | Luminal epithelial cells/Basal cells | \+  |     |     | \+  |     |     |     |     |     | \+  |     |     |     |     | \+  |     |     | \+  |     | \+  |     |     |
+| NEDD4L   | Basal cell                           | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  |     |     |     | \+  | \+  |     |     | \+  | \+  |     | \+  |
+| AQP3     | Basal cell                           | \+  |     | \+  | \+  |     |     |     |     |     | \+  | \+  |     |     |     | \+  |     |     | \+  | \+  | \+  | \+  |     |
+| CLDN4    | Basal cell                           | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  | \+  |     |     | \+  | \+  |     | \+  | \+  | \+  | \+  | \+  |
+| TACSTD2  | Basal cell/Ductal cell               | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  | \+  |     |     | \+  |     |     | \+  | \+  | \+  | \+  |     |
+| KRT19    | Basal cell                           | \+  |     | \+  |     |     | \+  |     |     | \+  | \+  | \+  | \+  |     |     | \+  | \+  |     | \+  | \+  | \+  | \+  | \+  |
+| KRT17    | Basal cell                           | \+  | \+  | \+  | \+  |     | \+  |     | \+  | \+  | \+  | \+  | \+  |     |     | \+  | \+  |     | \+  | \+  | \+  | \+  | \+  |
+
+-   Identifying gene markers for each cluster
+
+\`\`\`R \# Determine differentiating markers for CD4+ T cell cd4_tcells \<- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
 
 # Add gene symbols to the DE table
 
