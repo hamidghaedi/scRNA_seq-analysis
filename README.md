@@ -173,7 +173,6 @@ merged_seurat <- merge(x = SRR12603780,
                        #Because the same cell IDs can be used for different samples, we add a sample-specific prefix 
                        # to each of our cell IDs using the add.cell.id argument.
                        add.cell.id = samples)
-
 ```
 
 ## 4) Quality control
@@ -842,21 +841,157 @@ This can be the last step in our pipeline which aims to determine the gene marke
 
 -   Identification of all markers for each cluster
 
-```R
+``` r
 # Find markers for every cluster compared to all remaining cells, report only the positive ones
 markers <- FindAllMarkers(object = seurat_integrated, 
                           only.pos = TRUE,
                           logfc.threshold = 0.25)     
 DefaultAssay(seurat_integrated) <- "RNA"
 
-FindConservedMarkers(seurat_integrated,
-                     ident.1 = "seurat_clusters",
-                     grouping.var = "sample",
-                     only.pos = TRUE,
-                     min.diff.pct = 0.25,
-                     min.pct = 0.25,
-                     logfc.threshold = 0.25)
-		     
-		     
-
+cluster0_conserved_markers <- FindConservedMarkers(seurat_integrated,
+                              ident.1 = 0,
+                              grouping.var = "sample",
+                                only.pos = TRUE,
+                             logfc.threshold = 0.60)
 ```
+
+To add more annotation to the results
+
+``` r
+# Connect to AnnotationHub
+ah <- AnnotationHub()
+
+# Access the Ensembl database for organism
+ahDb <- query(ah, 
+              pattern = c("Homo sapiens", "EnsDb"), 
+              ignore.case = TRUE)
+
+# Acquire the latest annotation files
+id <- ahDb %>%
+        mcols() %>%
+        rownames() %>%
+        tail(n = 1)
+
+# Download the appropriate Ensembldb database
+edb <- ah[[id]]
+
+# Extract gene-level information from database
+annotations <- genes(edb, 
+                     return.type = "data.frame")
+
+# Select annotations of interest
+annotations <- annotations %>%
+        dplyr::select(gene_id, gene_name, seq_name, gene_biotype, description)
+```
+
+To find conserved markers for all clusters:
+
+``` r
+# Create function to get conserved markers for any given cluster
+get_conserved <- function(cluster){
+  FindConservedMarkers(seurat_integrated,
+                       ident.1 = cluster,
+                       grouping.var = "sample",
+                       only.pos = TRUE) %>%
+    rownames_to_column(var = "gene") %>%
+    left_join(y = unique(annotations[, c("gene_name", "description")]),
+               by = c("gene" = "gene_name")) %>%
+    cbind(cluster_id = cluster, .)
+  }
+  
+# this function can be an argument for 'map_dfr' function :
+# Iterate function across desired clusters
+conserved_markers <- map_dfr(c(0,21), get_conserved)
+
+# Extract top 10 markers per cluster
+top10 <- conserved_markers %>% 
+  mutate(avg_fc = (Normal_avg_log2FC + BLCA_avg_log2FC) /2) %>% 
+  group_by(cluster_id) %>% 
+  top_n(n = 10, 
+        wt = avg_fc)
+        
+head(top10)
+
+data.table::fwrite(top10, "top10_conserved_markers.csv")
+```
+
+I looked up for genes in the [PanglaoDB](https://panglaodb.se/index.html) database and here is the result:
+
+|cluster_id     | gene | avg_fc | cell_type                      |
+|-----|------------|------|--------------------------------------|
+| 0   | DENND2C    | 1.14 | Basal cells                          |
+| 0   | C19orf33   | 1.14 | Luminal epithelial cells             |
+| 0   | SFN        | 1.22 | Basal cells/Epithelial cells/Ductal  |
+| 0   | KRT13      | 1.38 | Luminal epithelial cells/Basal cells |
+| 0   | NEDD4L     | 1.18 | Basal cell                           |
+| 0   | AQP3       | 1.16 | Basal cell                           |
+| 0   | CLDN4      | 1.32 | Basal cell                           |
+| 0   | TACSTD2    | 1.2  | Basal cell/Ductal cell               |
+| 0   | KRT19      | 1.11 | Basal cell                           |
+| 0   | KRT17      | 1.24 | Basal cell                           |
+| 21  | S100A8     | 1.37 | Dendritic cells                      |
+| 21  | MNDA       | 0.91 | Dendritic cells                      |
+| 21  | S100A9     | 1.64 | Dendritic cells                      |
+| 21  | TYROBP     | 1.38 | Dendritic cells                      |
+| 21  | BCL2A1     | 0.98 | Dendritic cells                      |
+| 21  | LST1       | 1.22 | Dendritic cells                      |
+| 21  | G0S2       | 1.33 | Dendritic cells                      |
+| 21  | AIF1       | 1.08 | Dendritic cells                      |
+| 21  | CXCL8      | 1.16 | Dendritic cells                      |
+| 21  | FCER1G     | 0.92 | Dendritic cells                      |
+
+-   Visualizing marker genes
+
+``` r
+# Plot interesting marker gene expression for cluster 20
+FeaturePlot(object = seurat_integrated, 
+                        features = c("TPSAB1", "TPSB2", "FCER1A", "GATA1", "GATA2"),
+                         sort.cell = TRUE,
+                         min.cutoff = 'q10', 
+                         label = TRUE,
+                         repel = TRUE)
+# Vln plot - cluster 20
+VlnPlot(object = seurat_integrated, 
+        features = c("TPSAB1", "TPSB2", "FCER1A", "GATA1", "GATA2"))
+        
+```
+
+-   Identifying gene markers for each cluster \`\`\`R \# Determine differentiating markers for CD4+ T cell cd4_tcells \<- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
+
+# Add gene symbols to the DE table
+
+cd4_tcells \<- cd4_tcells %\>% rownames_to_column(var = "gene") %\>% left_join(y = unique(annotations[, c("gene_name", "description")]), by = c("gene" = "gene_name"))
+
+# Reorder columns and sort by padj
+
+cd4_tcells \<- cd4_tcells[, c(1, 3:5,2,6:7)]
+
+cd4_tcells \<- cd4_tcells %\>% dplyr::arrange(p_val_adj)
+
+# View data
+
+head(cd4_tcells)
+
+# Plot gene markers of activated and naive/memory T cells
+
+FeaturePlot(seurat_integrated, reduction = "umap", features = c("CREM", "CD69", "CCR7", "SELL"), label = TRUE, sort.cell = TRUE, min.cutoff = 'q10', repel = TRUE )
+
+# Rename all identities
+
+seurat_integrated \<- RenameIdents(object = seurat_integrated, "0" = "Naive or memory CD4+ T cells", "1" = "CD14+ monocytes", "2" = "Naive or memory CD4+ T cells", "3" = "CD14+ monocytes", "4" = "CD4+ T cells", "5" = "CD8+ T cells", "6" = "B cells", "7" = "Stressed cells / Activated T cells", "8" = "NK cells", "9" = "FCGR3A+ monocytes", "10" = "CD4+ T cells", "11" = "B cells", "12" = "NK cells", "13" = "CD8+ T cells", "14" = "CD14+ monocytes", "15" = "Conventional dendritic cells", "16" = "Megakaryocytes", "17" = "B cells", "18" = "CD4+ T cells", "19" = "Plasmacytoid dendritic cells", "20" = "Mast cells")
+
+# Plot the UMAP
+
+DimPlot(object = seurat_integrated, reduction = "umap", label = TRUE, label.size = 3, repel = TRUE)
+
+# Remove the stressed or dying cells
+
+seurat_subset_labeled \<- subset(seurat_integrated, idents = "Stressed cells / Activated T cells", invert = TRUE)
+
+# Re-visualize the clusters
+
+DimPlot(object = seurat_subset_labeled, reduction = "umap", label = TRUE, label.size = 3, repel = TRUE)
+
+# Save final R object
+
+write_rds(seurat_integrated, path = "results/seurat_labelled.rds")
