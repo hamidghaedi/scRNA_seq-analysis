@@ -1,10 +1,10 @@
 # scRNA sequencing analysis
 
-This repo presents steps needed to make sense of single cell RNA sequencing (scRNA) data. I used a scRNA dataset coming from Zhaohui Chen *et al.* [paper](https://www.nature.com/articles/s41467-020-18916-5#Sec12) published in Nature Communications 11, Article number: 5077 (2020). The cohort consisted of eight primary bladder tumor tissues (2 low-grade bladder urothelial tumors, six high-grade bladder urothelial tumors) along with 3 adjacent normal mucosae. In SRA datasets are under BioProject [PRJNA662018](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA662018) and SRA-explorer can be used to download the data. 
+This repo presents steps needed to make sense of single cell RNA sequencing (scRNA) data. I used a scRNA dataset coming from Zhaohui Chen *et al.* [paper](https://www.nature.com/articles/s41467-020-18916-5#Sec12) published in Nature Communications 11, Article number: 5077 (2020). The cohort consisted of eight primary bladder tumor tissues (2 low-grade bladder urothelial tumors, six high-grade bladder urothelial tumors) along with 3 adjacent normal mucosae. In SRA datasets are under BioProject [PRJNA662018](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA662018) and SRA-explorer can be used to download the data.
 
-## 1) Data download on ComputeCanada 
+## 1) Data download on ComputeCanada
 
-```shell
+``` shell
 
 #!/usr/bin/env bash
 
@@ -44,12 +44,11 @@ curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR126/081/SRR12603781/SRR12603781_1.
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR126/081/SRR12603781/SRR12603781_2.fastq.gz -o SRR12603781_normal_bladder_mucosa_1_2.fastq.gz
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR126/080/SRR12603780/SRR12603780_1.fastq.gz -o SRR12603780_normal_bladder_mucosa_2_1.fastq.gz
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR126/080/SRR12603780/SRR12603780_2.fastq.gz -o SRR12603780_normal_bladder_mucosa_2_2.fastq.gz
-
 ```
 
 It is always recomended to run QC on samples; so uisng the following code we can run `fastqc` on all samples
 
-```shell
+``` shell
 #!/bin/bash
 #SBATCH --account= # add your account name 
 #SBATCH --job-name=fastqc
@@ -72,15 +71,16 @@ do
  fastqc $f --outdir ./qc_raw  --thread 12 --nogroup
 done
 ```
-There are diffrences between sequence length of read 1 and read 2 for each samples; read 1 provides data on Cell barcode & UMI and read 2 has the insert sequence. Files coming from SRA usually come with names like something_1_fastq.gz and something_2_fastq.gz . This [blog](https://kb.10xgenomics.com/hc/en-us/articles/115003802691) is  helpful to see what are the naming requirements of fastq files for cellranger tool. Briefly; 
 
-- incompatible file name: SRR9291388_1.fastq.gz
+There are diffrences between sequence length of read 1 and read 2 for each samples; read 1 provides data on Cell barcode & UMI and read 2 has the insert sequence. Files coming from SRA usually come with names like something_1\_fastq.gz and something_2\_fastq.gz . This [blog](https://kb.10xgenomics.com/hc/en-us/articles/115003802691) is helpful to see what are the naming requirements of fastq files for cellranger tool. Briefly;
 
-- compatible file name: SRR9291388_S1_L001_R1_001.fastq.g
+-   incompatible file name: SRR9291388_1.fastq.gz
+
+-   compatible file name: SRR9291388_S1_L001_R1_001.fastq.g
 
 So we need to change file names and also set up the directories for `cellranger count`;
 
-```shell
+``` shell
 for file in *.fastq.gz
 do
   dir=${file%_*}
@@ -88,15 +88,15 @@ do
   mkdir $dir
   mv $file ./$dir
 done
-
 ```
-## 2) Generating feature-sample expression matrix 
 
-The next step is to run `cellranger count` on each samples. There are different types of scRNA libs with different fastq files. This [blog](https://www.10xgenomics.com/support/single-cell-gene-expression/documentation/steps/sequencing/sequencing-requirements-for-single-cell-3) provide details on type of libs from 10X genomics. 
+## 2) Generating feature-sample expression matrix
+
+The next step is to run `cellranger count` on each samples. There are different types of scRNA libs with different fastq files. This [blog](https://www.10xgenomics.com/support/single-cell-gene-expression/documentation/steps/sequencing/sequencing-requirements-for-single-cell-3) provide details on type of libs from 10X genomics.
 
 Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy task. The following is what I came up with working best for me working on ComputeCanada cluster:
 
-```shell
+``` shell
 #!/bin/bash
 #SBATCH --account=def-gooding-ab
 #SBATCH -J test_cellranger
@@ -128,14 +128,13 @@ cellranger count --id=$ID \
                  --fastqs=$d
                  --chemistry=SC3Pv2
 done
-
 ```
 
-The next steps are mainly based on  Harvard Chan Bioinformatics Core materials on [scRNA-seq analysis](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) training. 
+The next steps are mainly based on Harvard Chan Bioinformatics Core materials on [scRNA-seq analysis](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) training.
 
 ## 3) Loading single-cell RNA-seq count data
 
-```R
+``` r
 # Setup the Seurat Object
 
 library(tidyverse)
@@ -175,27 +174,25 @@ merged_seurat <- merge(x = SRR12603780,
                        # to each of our cell IDs using the add.cell.id argument.
                        add.cell.id = samples)
 
-
-
 ```
+
 ## 4) Quality control
 
 There are columns in the metadata:
 
-- orig.ident: this column will contain the sample identity if known. It will default to the value we provided for the project argument when loading in the data
+-   orig.ident: this column will contain the sample identity if known. It will default to the value we provided for the project argument when loading in the data
 
-- nCount_RNA: represents the number of UMIs per cell. UMI (unique molecular identifiers) is used to determine whether a read is a biological or technical duplicate (PCR duplicate). Reads with different UMIs mapping to the same transcript were derived from different molecules and are biological duplicates - each read should be counted. Reads with the same UMI originated from the same molecule and are technical duplicates - the UMIs should be collapsed to be counted as a single read.
+-   nCount_RNA: represents the number of UMIs per cell. UMI (unique molecular identifiers) is used to determine whether a read is a biological or technical duplicate (PCR duplicate). Reads with different UMIs mapping to the same transcript were derived from different molecules and are biological duplicates - each read should be counted. Reads with the same UMI originated from the same molecule and are technical duplicates - the UMIs should be collapsed to be counted as a single read.
 
-
-- nFeature_RNA: represents the number of genes detected per cell
+-   nFeature_RNA: represents the number of genes detected per cell
 
 Recommended features to add to metadata:
 
-- number of genes detected per UMI (or novelty score): more genes detected per UMI, more complex our data
+-   number of genes detected per UMI (or novelty score): more genes detected per UMI, more complex our data
 
-- mitochondrial ratio: this metric will give us a percentage of cell reads originating from the mitochondrial genes (coming from dying cells)
+-   mitochondrial ratio: this metric will give us a percentage of cell reads originating from the mitochondrial genes (coming from dying cells)
 
-```R
+``` r
 # Explore merged metadata
 View(merged_seurat@meta.data)
 
@@ -234,9 +231,10 @@ save(merged_seurat, file="~/scRNA/merged_filtered_seurat.RData")
 
 #
 ```
+
 #### Cell counts per sample
 
-```R
+``` r
 # Visualize the number of cell counts per sample
 bqcc <- metadata %>% 
   ggplot(aes(x=seq_folder, fill=sample)) + 
@@ -245,11 +243,11 @@ bqcc <- metadata %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   theme(plot.title = element_text(hjust=0.5, face="bold")) +
   ggtitle("NCells before QC")
-
 ```
+
 #### UMI per cell
 
-```R
+``` r
 # Visualize the number UMIs/transcripts per cell
 metadata %>% 
   ggplot(aes(color=seq_folder, x=nUMI, fill= sample)) + 
@@ -260,9 +258,10 @@ metadata %>%
   geom_vline(xintercept = 500)
   
 ```
+
 #### Genes detected per cell
 
-```R
+``` r
 # Visualize the distribution of genes detected per cell via histogram
 metadata %>% 
   ggplot(aes(color=seq_folder, x=nGene, fill= sample)) + 
@@ -271,9 +270,10 @@ metadata %>%
   scale_x_log10() + 
   geom_vline(xintercept = 300)
 ```
+
 #### Novelty score
 
-```R
+``` r
 # Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
 metadata %>%
   ggplot(aes(x=log10GenesPerUMI, color = sample, fill=sample)) +
@@ -284,7 +284,7 @@ metadata %>%
 
 #### Mitochondrial gene expression detected per cell
 
-```R
+``` r
 # Visualize the distribution of mitochondrial gene expression detected per cell
 metadata %>% 
   ggplot(aes(color=seq_folder, x=mitoRatio, fill=sample)) + 
@@ -293,9 +293,10 @@ metadata %>%
   theme_classic() +
   geom_vline(xintercept = 0.2)
 ```
+
 #### Checking for cells with low numbers of genes/UMIs
 
-```R
+``` r
 # Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
 metadata %>% 
   ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
@@ -309,33 +310,33 @@ metadata %>%
   geom_hline(yintercept = 250) +
   facet_wrap(~sample)
 ```
+
 ### Filtering
 
 #### Cell-level filtering
 
--nUMI > 500
+-nUMI \> 500
 
--nGene > 250
+-nGene \> 250
 
--log10GenesPerUMI > 0.8
+-log10GenesPerUMI \> 0.8
 
--mitoRatio < 0.2
+-mitoRatio \< 0.2
 
-```R
+``` r
 # Filter out low quality cells using selected thresholds - these will change with experiment
 filtered_seurat <- subset(merged_seurat, 
                           subset= nUMI >= 500 & 
                           nGene >= 250 & 
                           log10GenesPerUMI > 0.80 & 
                           mitoRatio < 0.20)
-
 ```
 
 #### Gene-level filtering
 
 Keep only genes which are expressed in 10 or more cells
 
-```R
+``` r
 # Extract counts
 counts <- GetAssayData(object = filtered_seurat, slot = "counts")
 
@@ -355,7 +356,7 @@ save(filtered_seurat, file="seurat_filtered.RData")
 
 #### Re-assess QC metrics
 
-```R
+``` r
 
 # Save filtered subset to new metadata
 metadata_clean <- filtered_seurat@meta.data
@@ -419,13 +420,14 @@ metadata_clean %>%
   facet_wrap(~sample)
   
 ```
+
 ## 5) Normalization and regressing out unwanted variation
 
 ### Explore sources of unwanted variation
 
 Both biological source of variation (e.g. effect of cell cycle on transcriptome) and technical source should be explored and account for. In early version of Seurat one needs to normalize data, find variable features and then scale data while setting a variable like mitochondrial contamination or cell cycle stage to be regressed out. So here is code for doing these steps to mitigate cell cycle stage effects on the dataset, however a newer function in Seurat has automated all of these steps (`SCTtansform()`).
 
-```R
+``` r
 # Normalize the counts
 # This normalization method is solely for the purpose of exploring the sources of variation in our data.
 seurat_phase <- NormalizeData(filtered_seurat, normalization.method = "LogNormalize", scale.factor = 10000)
@@ -471,17 +473,16 @@ seurat_phase@meta.data$mitoFr <- cut(seurat_phase@meta.data$mitoRatio,
 seurat_phase <- ScaleData(seurat_phase)
 saveRDS(seurat_phase, "seurat_phase.rds")
 ```
+
 ### SCTransform
 
-This function is useful for automatic normalization and regressing out sources of unwanted variation. This method is more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes. In practice `SCTransform`  single command replaces `NormalizeData()`, `ScaleData()`, and `FindVariableFeatures()`. Since we have two group of sample we will run SCTransform on each groups after doing "integration".
+This function is useful for automatic normalization and regressing out sources of unwanted variation. This method is more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes. In practice `SCTransform` single command replaces `NormalizeData()`, `ScaleData()`, and `FindVariableFeatures()`. Since we have two group of sample we will run SCTransform on each groups after doing "integration".
 
+### Integration
 
-### Integration 
-Integrate or align samples across groups using shared highly variable genes
-If cells cluster by sample, condition, batch, dataset, or even modality (scRNA, scATAC-seq), this integration step can significantly improve the clustering and the downstream analyses.
-So we want to integrate normal samples together and BLCA sample together , so downstream analysis would make more sense to do. For integration, we have to keep samples as separate objects and transform them as that is what is required for integration.
+Integrate or align samples across groups using shared highly variable genes If cells cluster by sample, condition, batch, dataset, or even modality (scRNA, scATAC-seq), this integration step can significantly improve the clustering and the downstream analyses. So we want to integrate normal samples together and BLCA sample together , so downstream analysis would make more sense to do. For integration, we have to keep samples as separate objects and transform them as that is what is required for integration.
 
-```R
+``` r
 # adjust the limit for allowable object sizes within R
 options(future.globals.maxSize = 4000 * 1024^2)
 
@@ -515,12 +516,12 @@ split_seurat$Normal@assays
 
                                    
 ```
-### Integration check 
+
+### Integration check
+
 After normalization and integration, we can proceed to PCA and UMAP/t-SNE to see effect of integration.
 
-
-
-```R
+``` r
 # Run PCA
 seurat_integrated <- RunPCA(object = seurat_integrated, verbose = TRUE)
 # PC_ 1
@@ -585,7 +586,7 @@ dev.off()
 
 For new method like SCTransform it is not needed to calculate the number of PCs for clustering. However older methods could not efficiently removed technical biases , so using them it was necessary to have some idea about the number of PCs that can capture most of information in the dataset.
 
-```R
+``` r
 # Explore heatmap of PCs
 png(filename = "PCA_integrated_2.png", width = 16, height = 8.135, units = "in", res = 300)
 DimHeatmap(seurat_integrated, 
@@ -628,12 +629,11 @@ co2
 pcs <- min(co1, co2)
 
 pcs
-
 ```
 
 #### Cluster the cells
 
-```R
+``` r
 # to check what is active assay
 DefaultAssay(object = seurat_integrated)
 
@@ -661,13 +661,14 @@ DimPlot(seurat_integrated,
         label.size = 6)
 dev.off()
 ```
+
 #### Clustering quality control
 
-After clustering, we need to make sure that the assigned clusters are true representative of biological clusters (cell clusters) not due to technical or unwanted source of variation (like cell cycle stages). Also , in this step we need to identify cell type for each cluster based on the known cell type markers. 
+After clustering, we need to make sure that the assigned clusters are true representative of biological clusters (cell clusters) not due to technical or unwanted source of variation (like cell cycle stages). Also , in this step we need to identify cell type for each cluster based on the known cell type markers.
 
-- Segregation of clusters by sample
+-   Segregation of clusters by sample
 
-```R
+``` r
 # Extract identity and sample information from seurat object to determine the number of cells per cluster per sample
 
 library(dplyr)
@@ -685,7 +686,8 @@ n_cells <- tidyr::spread(n_cells, ident, n)
 
 
 
-#Ading sample data from paper; we expect to see samples from same group have more or less similar number of cells in each cluster. So normal samples should show similar patters: SRR12603780, SRR12603781, and SRR12603788.
+#Ading sample data from paper; we expect to see samples from same group have more or less similar number of cells in each cluster. 
+#So normal samples should show similar patters: SRR12603780, SRR12603781, and SRR12603788.
 
 
 
@@ -705,7 +707,156 @@ sampleData<- data.frame(tibble::tribble(
   ))
 
 
-
 # View table
 head(n_cells)
-                                
+# saving objects (to mark where and when we stored the file)
+#seurat_cluster <- seurat_integrated
+#saveRDS(seurat_cluster, "seurat_cluster.RDS")
+
+
+# UMAP of cells in each cluster by sample
+# This would allow us to see condition specefic clusters
+png(filename = "umap_cluster_sample.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(seurat_integrated, 
+        label = TRUE, 
+        split.by = "sample")  + NoLegend()
+dev.off()
+
+
+
+
+
+# Segregation of clusters by cell cycle phase (unwanted source of variation) 
+# Explore whether clusters segregate by cell cycle phase
+
+png(filename = "umap_cluster_cell_cucle.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(seurat_integrated,
+        label = TRUE, 
+        split.by = "Phase")  + NoLegend()
+dev.off()
+```
+
+-   Segregation of clusters by various sources of uninteresting variation
+
+We expect to see a uniform coluring for all variables in all clusters. Sometimes this is not the case. Like here `nUMI` and `nGene` showing higher value is some clusters. We have to watch these cluster and inspect them in terms of type of cell therein. So that may explain some of the variation that we are seeing.
+
+``` r
+# Determine metrics to plot present in seurat_integrated@meta.data
+metrics <-  c("nUMI", "nGene", "S.Score", "G2M.Score", "mitoRatio")
+png(filename = "umap_unwanted_source_clustering.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(seurat_integrated, 
+            reduction = "umap", 
+            features = metrics,
+            pt.size = 0.4, 
+            order = TRUE,
+            min.cutoff = 'q10',
+            label = TRUE)
+dev.off()
+```
+
+-   Exploration of the PCs driving the different clusters
+
+We hope that the defined PCs could separate clusters well.We can see how the clusters are represented by the different PCs.Then we could look back at our genes driving this PC to get an idea of what the cell types might be in each cluster.
+
+``` r
+# Defining the information in the seurat object of interest
+columns <- c(paste0("PC_", 1:18),
+            "ident",
+            "UMAP_1", "UMAP_2")
+
+# Extracting this data from the seurat object
+pc_data <- FetchData(seurat_integrated, 
+                     vars = columns)
+                     
+                     
+# Adding cluster label to center of cluster on UMAP
+umap_label <- FetchData(seurat_integrated, 
+                        vars = c("ident", "UMAP_1", "UMAP_2"))  %>%
+  group_by(ident) %>%
+  summarise(x=mean(UMAP_1), y=mean(UMAP_2))
+
+
+
+# Plotting a UMAP plot for each of the PCs
+library(cowplot)
+library(tidyverse)
+library(HGNChelper)
+
+png(filename = "umap_on_pcs.png", width = 16, height = 8.135, units = "in", res = 300)
+map(paste0("PC_", 1:18), function(pc){
+        ggplot(pc_data, 
+               aes(UMAP_1, UMAP_2)) +
+                geom_point(aes_string(color=pc), 
+                           alpha = 0.7) +
+                scale_color_gradient(guide = FALSE, 
+                                     low = "grey90", 
+                                     high = "blue")  +
+                geom_text(data=umap_label, 
+                          aes(label=ident, x, y)) +
+                ggtitle(pc)
+}) %>% 
+        plot_grid(plotlist = .)
+dev.off()
+
+
+# Examine PCA results 
+print(seurat_integrated[["pca"]], dims = 1:5, nfeatures = 5)
+```
+
+``` r
+# Normalize RNA data for visualization purposes
+seurat_integrated <- NormalizeData(seurat_integrated, verbose = FALSE)
+
+png(filename = "umap_fibroblast.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(seurat_integrated, 
+            reduction = "umap", 
+            features = c("IGFBP7", "MGP"), 
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE)
+dev.off()
+
+png(filename = "umap_endothelial.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(seurat_integrated, 
+            reduction = "umap", 
+            features = c("PLVAP", "CALCRL"), 
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE)
+dev.off()
+
+
+png(filename = "umap_t_cells.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(seurat_integrated, 
+            reduction = "umap", 
+            features = c("CCL5", "CD52", "IL32"), 
+            order = TRUE,
+            min.cutoff = 'q10', 
+            label = TRUE)
+dev.off()
+```
+
+### Marker identification
+
+This can be the last step in our pipeline which aims to determine the gene markers for each of the clusters and identify cell types of each cluster using markers. Also this step helps to determine whether there's a need to re-cluster based on cell type markers, or maybe clusters need to be merged or split.
+
+-   Identification of all markers for each cluster
+
+```R
+# Find markers for every cluster compared to all remaining cells, report only the positive ones
+markers <- FindAllMarkers(object = seurat_integrated, 
+                          only.pos = TRUE,
+                          logfc.threshold = 0.25)     
+DefaultAssay(seurat_integrated) <- "RNA"
+
+FindConservedMarkers(seurat_integrated,
+                     ident.1 = "seurat_clusters",
+                     grouping.var = "sample",
+                     only.pos = TRUE,
+                     min.diff.pct = 0.25,
+                     min.pct = 0.25,
+                     logfc.threshold = 0.25)
+		     
+		     
+
+```
