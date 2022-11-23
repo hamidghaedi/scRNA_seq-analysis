@@ -977,8 +977,9 @@ VlnPlot(object = seurat_integrated,
 dev.off() 
 ```
 
-So some other clusters are also showing expression for the identified markers. Clusters 0,2,3,9,10,14,18 and 19 showing similar pattern of expression for top 10 basal cell markers.
+So some other clusters are also showing expression for the identified markers. Clusters 0,2,3,9,10,14,18 and 19 showing similar pattern of expression for the top 10 basal cell markers.
 Actually these are mostly BLCA specific cluster which may imply that the tumor subtype of samples included in the study was basal bladder cancer. 
+
 
 | gene     | cells                                | 0   | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  | 11  | 12  | 13  | 14  | 15  | 16  | 17  | 18  | 19  | 20  | 21  |
 |---|------|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -1028,7 +1029,7 @@ DimPlot(object = seurat_integrated, reduction = "umap", label = TRUE, label.size
 
 # Remove the stressed or dying cells
 
-seurat_subset_labeled \<- subset(seurat_integrated, idents = "Stressed cells / Activated T cells", invert = TRUE)
+seurat_subset_labeled <- subset(seurat_integrated, idents = "Stressed cells / Activated T cells", invert = TRUE)
 
 # Re-visualize the clusters
 
