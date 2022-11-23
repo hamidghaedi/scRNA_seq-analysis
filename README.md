@@ -700,9 +700,9 @@ sampleData<- data.frame(tibble::tribble(
   "SRR12603784",     "M",  75L, "high",    "Invasive",  "Cystectomy",          "4.3",
   "SRR12603783",     "M",  77L, "high",    "Invasive",  "Cystectomy",          "4.5",
   "SRR12603782",     "F",  72L, "high",    "Invasive",  "Cystectomy",          "4.1",
-  "SRR12603781",     "M",  67L,    "-",           "-",       "TURBT",            "-",
-  "SRR12603788",     "M",  75L,    "-",           "-",  "Cystectomy",            "-",
-  "SRR12603780",     "M",  63L,    "-",           "-",  "Cystectomy",            "-"
+  "SRR12603781",     "M",  67L, "normal",   "normal",       "TURBT",            "-",
+  "SRR12603788",     "M",  75L, "normal",   "normal",  "Cystectomy",            "-",
+  "SRR12603780",     "M",  63L, "normal",   "normal",  "Cystectomy",            "-"
   ))
 
 
@@ -901,7 +901,7 @@ get_conserved <- function(cluster){
   
 # this function can be an argument for 'map_dfr' function :
 # Iterate function across desired clusters
-conserved_markers <- map_dfr(c(0,21), get_conserved)
+conserved_markers <- map_dfr(c(0:21), get_conserved)
 
 # Extract top 10 markers per cluster
 top10 <- conserved_markers %>% 
@@ -994,10 +994,35 @@ Actually these are mostly BLCA specific cluster which may imply that the tumor s
 | KRT19    | Basal cell                           | \+  |     | \+  |     |     | \+  |     |     | \+  | \+  | \+  | \+  |     |     | \+  | \+  |     | \+  | \+  | \+  | \+  | \+  |
 | KRT17    | Basal cell                           | \+  | \+  | \+  | \+  |     | \+  |     | \+  | \+  | \+  | \+  | \+  |     |     | \+  | \+  |     | \+  | \+  | \+  | \+  | \+  |
 
+For cluster 21 genes;
+
+```R
+# Plot interesting marker gene expression for cluster 21
+png(filename = "umap_cluster21_DC.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = seurat_integrated, 
+                        features = c("S100A8", "MNDA", "S100A9", "TYROBP", "BCL2A1",
+                        "LST1", "G0S2", "AIF1", "CXCL8", "FCER1G"),
+                         sort.cell = TRUE,
+                         min.cutoff = 'q10', 
+                         label = TRUE,
+                         repel = TRUE)
+dev.off()
+```
+Since cluster 21 is not a large cluster , so we are going to inspect other clusters;
+
+```R
+cluster_1_conserved_markers <- conserved_markers %>%
+                              filter(cluster_id == '1') %>% 
+                              mutate(avg_fc = (Normal_avg_log2FC + BLCA_avg_log2FC) /2) %>% 
+                              top_n(n = 10, wt = avg_fc)
+```
+
 -   Identifying gene markers for each cluster
 
 ```R
-# Determine differentiating markers for CD4+ T cell cd4_tcells <- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
+# Determine differentiating markers for CD4+ T cell 
+
+cd4_tcells <- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
 
 # Add gene symbols to the DE table
 
@@ -1039,3 +1064,5 @@ DimPlot(object = seurat_subset_labeled, reduction = "umap", label = TRUE, label.
 
 write_rds(seurat_integrated, path = "results/seurat_labelled.rds")
 ```
+
+To be able to color UMAP plots based on other types of data like grade, and metastasis we need to add relevant data to the Seurat object data;
