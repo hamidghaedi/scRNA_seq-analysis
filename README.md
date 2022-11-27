@@ -915,39 +915,41 @@ head(top10)
 data.table::fwrite(top10, "top10_conserved_markers.csv")
 ```
 
-I looked up for genes in the [PanglaoDB](https://panglaodb.se/index.html) database and here is the result:
-
-| cluster_id | gene     | avg_fc | cell_type                            |
-|------------|----------|--------|--------------------------------------|
-| 0          | DENND2C  | 1.14   | Basal cells                          |
-| 0          | C19orf33 | 1.14   | Luminal epithelial cells             |
-| 0          | SFN      | 1.22   | Basal cells/Epithelial cells/Ductal  |
-| 0          | KRT13    | 1.38   | Luminal epithelial cells/Basal cells |
-| 0          | NEDD4L   | 1.18   | Basal cell                           |
-| 0          | AQP3     | 1.16   | Basal cell                           |
-| 0          | CLDN4    | 1.32   | Basal cell                           |
-| 0          | TACSTD2  | 1.2    | Basal cell/Ductal cell               |
-| 0          | KRT19    | 1.11   | Basal cell                           |
-| 0          | KRT17    | 1.24   | Basal cell                           |
-| 21         | S100A8   | 1.37   | Dendritic cells                      |
-| 21         | MNDA     | 0.91   | Dendritic cells                      |
-| 21         | S100A9   | 1.64   | Dendritic cells                      |
-| 21         | TYROBP   | 1.38   | Dendritic cells                      |
-| 21         | BCL2A1   | 0.98   | Dendritic cells                      |
-| 21         | LST1     | 1.22   | Dendritic cells                      |
-| 21         | G0S2     | 1.33   | Dendritic cells                      |
-| 21         | AIF1     | 1.08   | Dendritic cells                      |
-| 21         | CXCL8    | 1.16   | Dendritic cells                      |
-| 21         | FCER1G   | 0.92   | Dendritic cells                      |
-
--   Visualizing marker genes
+There are a number of tools that one may use to assign cell type to a cluster. However almost non of them at the time of writing can help with bladder tissue. So I have to looked up for genes in the [PanglaoDB](https://panglaodb.se/index.html) database manually and assign cell type to each cluster. So to do this job in a more efficient way, lets first identify which markers are associated to more clusters, then assign cell type to those clusters.
 
 ``` r
-# Plot interesting marker gene expression for cluster 0
-png(filename = "umap_cluster0_basal_cells.png", width = 16, height = 8.135, units = "in", res = 300)
+top10_mod <- data.frame(unclass(table(top10$gene, top10$cluster_id)))
+
+
+data.table::fwrite(top10_mod, "top10_mod_conserved_markers.csv")
+
+# markers with highest frequency
+M <- c("KRT7", "KRT19", "FCER1G", "AIF1", "AQP3", "CCL5", "CD24", "CD3D", "CD52", "CLDN4", "COL1A1", "COL1A2", "CRTAC1", "CXCL8", "DCN", "FABP4", "FABP5", "FXYD3", "GZMA", "HLA-DRA", "IGHA1", "IGHG1", "IGHG3", "IGHG4", "IGKC", "IGLC1", "IGLC2", "IGLC3", "JCHAIN")
+```
+So cell type for top markers:
+
+| cell type                | genes                                                 |
+|--------------------------|-------------------------------------------------------|
+| Basal cells              | KRT7, KRT19, AQP3, CD24,CXCL8,FXYD3                   |
+| Dendritic cells          | FCER1G,AIF1,FABP4                                     |
+| Gamma delta T cells      | CCL5,GZMA                                             |
+| NK cell                  | CCL5,GZMA                                             |
+| T cells                  | CD3D, CD52                                            |
+| Macrophages              | CD52                                                  |
+| Luminal epithelial cells | CLDN4                                                 |
+| Fibroblasts              | COLA1, COLA2,CXCL8, DCN                               |
+| Epithelial cells         | CRTAC1,FXYD3                                          |
+| Endothelial cells        | FABP4, FABP5                                          |
+| Plasma cell              | IGHA1,IGHG1,IGHG3,IGHG4,IGKC,IGLC1,IGLC3,IGLC3,JCHAIN |
+
+Lets visualize some of the genes and see in which cluster they show expression.
+
+```R
+
+# Plot interesting marker gene expression 
+png(filename = "umap_high_freq_basal_cells.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(object = seurat_integrated, 
-                        features = c("DENND2C", "C19orf33", "SFN", "KRT13", "NEDD4L",
-                        "AQP3", "CLDN4", "TACSTD2", "KRT19", "KRT17"),
+                        features = c("KRT7", "KRT19", "AQP3", "CD24", "FXYD3", "CXCL8"),
                          sort.cell = TRUE,
                          min.cutoff = 'q10', 
                          label = TRUE,
@@ -956,33 +958,83 @@ dev.off()
 
 
 # Vln plot - cluster 0
-png(filename = "cluster_violin_plot_DENND2C_C19orf33.png", width = 16, height = 8.135, units = "in", res = 300)
+png(filename = "violin_high_freq_basal_cells.png", width = 16, height = 8.135, units = "in", res = 300)
 VlnPlot(object = seurat_integrated, 
-        features = c("DENND2C", "C19orf33"))
+        features = c("KRT7", "KRT19", "AQP3", "CD24", "FXYD3", "CXCL8"))
 dev.off() 
+```
+So according to "basal cells" visualization , following clusters may show clusters of basal cells:
+0, 2,3,9,10,14,17,18,19(?),20 and 21.
 
-png(filename = "cluster_violin_plot_NEDD4L_SFN.png", width = 16, height = 8.135, units = "in", res = 300)
+
+``` r
+# Plot interesting marker gene expression 
+png(filename = "umap_high_freq_Plasma_cells.png", width = 26, height = 15.135, units = "in", res = 600)
+FeaturePlot(object = seurat_integrated, 
+                        features = c("IGHA1","IGHG1","IGHG3","IGHG4","IGKC","IGLC1","IGLC3","IGLC3","JCHAIN"),
+                         sort.cell = TRUE,
+                         min.cutoff = 'q10', 
+                         label = TRUE,
+                         repel = TRUE)
+dev.off()
+
+
+# Vln plot - cluster 0
+png(filename = "violin_high_freq_basal_cells.png", width = 26, height = 10.135, units = "in", res = 600)
 VlnPlot(object = seurat_integrated, 
-        features = c("NEDD4L", "SFN"))
+        features = c("IGHA1","IGHG1","IGHG3","IGHG4","IGKC","IGLC1","IGLC3","IGLC3","JCHAIN"))
 dev.off() 
+```
+Cluster 19 looks to be hard to assign it a cell type. Will keep an eye on it.
 
-png(filename = "cluster_violin_plot_KRTs.png", width = 16, height = 8.135, units = "in", res = 300)
-VlnPlot(object = seurat_integrated, 
-        features = c("KRT13", "KRT17", "KRT19"))
-dev.off() 
+```R
 
-png(filename = "cluster_violin_plot_AQP3_CLDN4_TACSTD2.png", width = 16, height = 8.135, units = "in", res = 300)
+# Plot interesting marker gene expression 
+png(filename = "umap_high_freq_dc.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = seurat_integrated, 
+                        features = c("FCER1G","AIF1","FABP4"),
+                         sort.cell = TRUE,
+                         min.cutoff = 'q10', 
+                         label = TRUE,
+                         repel = TRUE)
+dev.off()
+
+
+# Vln plot - cluster 0
+png(filename = "violin_high_freq_dc.png", width = 16, height = 8.135, units = "in", res = 300)
 VlnPlot(object = seurat_integrated, 
-        features = c( "AQP3", "CLDN4", "TACSTD2"))
+        features = c("FCER1G","AIF1","FABP4"))
 dev.off() 
 ```
 
-So some other clusters are also showing expression for the identified markers. Clusters 0,2,3,9,10,14,18 and 19 showing similar pattern of expression for the top 10 basal cell markers.
-Actually these are mostly BLCA specific cluster which may imply that the tumor subtype of samples included in the study was basal bladder cancer. 
+For cluster1 and 4
 
+```R
+d <- data.table::fread("top10_conserved_markers.csv")
+
+png(filename = "umap_cluster4_markers.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = seurat_integrated, 
+                        features = d$gene[d$cluster_id == "4"],
+                         sort.cell = TRUE,
+                         min.cutoff = 'q10', 
+                         label = TRUE,
+                         repel = TRUE)
+dev.off()
+
+
+# Vln plot - cluster 0
+png(filename = "violin_cluster4_markers.png", width = 16, height = 8.135, units = "in", res = 300)
+VlnPlot(object = seurat_integrated, 
+        features = d$gene[d$cluster_id == "4"])
+dev.off() 
+```
+So it seems clusters 1,4,8,12,13 and 16 are the same cell type with minor subtypes.
+
+
+So some other clusters are also showing expression for the identified markers. Clusters 0,2,3,9,10,14,18 and 19 showing similar pattern of expression for the top 10 basal cell markers. Actually these are mostly BLCA specific cluster which may imply that the tumor subtype of samples included in the study was basal bladder cancer.
 
 | gene     | cells                                | 0   | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  | 11  | 12  | 13  | 14  | 15  | 16  | 17  | 18  | 19  | 20  | 21  |
-|---|------|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | DENND2C  | Basal cells                          | \+  |     | \+  | \+  |     |     |     |     |     | \+  | \+  |     |     |     | \+  |     |     |     | \+  | \+  |     | \+  |
 | C19orf33 | Luminal epithelial cells             | \+  |     | \+  | \+  |     |     |     |     |     | \+  | \+  |     |     |     | \+  |     |     |     |     |     |     |     |
 | SFN      | Basal cells/Epithelial cells/Ductal  | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  |     |     |     | \+  | \+  |     |     | \+  | \+  |     | \+  |
@@ -996,7 +1048,7 @@ Actually these are mostly BLCA specific cluster which may imply that the tumor s
 
 For cluster 21 genes;
 
-```R
+``` r
 # Plot interesting marker gene expression for cluster 21
 png(filename = "umap_cluster21_DC.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(object = seurat_integrated, 
@@ -1008,9 +1060,10 @@ FeaturePlot(object = seurat_integrated,
                          repel = TRUE)
 dev.off()
 ```
+
 Since cluster 21 is not a large cluster , so we are going to inspect other clusters;
 
-```R
+``` r
 cluster_1_conserved_markers <- conserved_markers %>%
                               filter(cluster_id == '1') %>% 
                               mutate(avg_fc = (Normal_avg_log2FC + BLCA_avg_log2FC) /2) %>% 
@@ -1019,7 +1072,7 @@ cluster_1_conserved_markers <- conserved_markers %>%
 
 -   Identifying gene markers for each cluster
 
-```R
+``` r
 # Determine differentiating markers for CD4+ T cell 
 
 cd4_tcells <- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
@@ -1034,7 +1087,7 @@ cd4_tcells <- cd4_tcells %>%
 
 cd4_tcells <- cd4_tcells[, c(1, 3:5,2,6:7)]
 
-cd4_tcells <- cd4_tcells %\>% dplyr::arrange(p_val_adj)
+cd4_tcells <- cd4_tcells %>% dplyr::arrange(p_val_adj)
 
 # View data
 
