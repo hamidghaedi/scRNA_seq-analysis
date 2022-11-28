@@ -1027,95 +1027,108 @@ png(filename = "violin_cluster4_markers.png", width = 16, height = 8.135, units 
 VlnPlot(object = seurat_integrated, 
         features = d$gene[d$cluster_id == "4"])
 dev.off() 
-```
-So it seems clusters 1,4,8,12,13 and 16 are the same cell type with minor subtypes.
 
-
-So some other clusters are also showing expression for the identified markers. Clusters 0,2,3,9,10,14,18 and 19 showing similar pattern of expression for the top 10 basal cell markers. Actually these are mostly BLCA specific cluster which may imply that the tumor subtype of samples included in the study was basal bladder cancer.
-
-| gene     | cells                                | 0   | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  | 11  | 12  | 13  | 14  | 15  | 16  | 17  | 18  | 19  | 20  | 21  |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| DENND2C  | Basal cells                          | \+  |     | \+  | \+  |     |     |     |     |     | \+  | \+  |     |     |     | \+  |     |     |     | \+  | \+  |     | \+  |
-| C19orf33 | Luminal epithelial cells             | \+  |     | \+  | \+  |     |     |     |     |     | \+  | \+  |     |     |     | \+  |     |     |     |     |     |     |     |
-| SFN      | Basal cells/Epithelial cells/Ductal  | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  |     |     |     | \+  | \+  |     |     | \+  | \+  |     | \+  |
-| KRT13    | Luminal epithelial cells/Basal cells | \+  |     |     | \+  |     |     |     |     |     | \+  |     |     |     |     | \+  |     |     | \+  |     | \+  |     |     |
-| NEDD4L   | Basal cell                           | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  |     |     |     | \+  | \+  |     |     | \+  | \+  |     | \+  |
-| AQP3     | Basal cell                           | \+  |     | \+  | \+  |     |     |     |     |     | \+  | \+  |     |     |     | \+  |     |     | \+  | \+  | \+  | \+  |     |
-| CLDN4    | Basal cell                           | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  | \+  |     |     | \+  | \+  |     | \+  | \+  | \+  | \+  | \+  |
-| TACSTD2  | Basal cell/Ductal cell               | \+  |     | \+  | \+  |     |     |     | \+  |     | \+  | \+  | \+  |     |     | \+  |     |     | \+  | \+  | \+  | \+  |     |
-| KRT19    | Basal cell                           | \+  |     | \+  |     |     | \+  |     |     | \+  | \+  | \+  | \+  |     |     | \+  | \+  |     | \+  | \+  | \+  | \+  | \+  |
-| KRT17    | Basal cell                           | \+  | \+  | \+  | \+  |     | \+  |     | \+  | \+  | \+  | \+  | \+  |     |     | \+  | \+  |     | \+  | \+  | \+  | \+  | \+  |
-
-For cluster 21 genes;
-
-``` r
-# Plot interesting marker gene expression for cluster 21
-png(filename = "umap_cluster21_DC.png", width = 16, height = 8.135, units = "in", res = 300)
+png(filename = "umap_cluster12_markers.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(object = seurat_integrated, 
-                        features = c("S100A8", "MNDA", "S100A9", "TYROBP", "BCL2A1",
-                        "LST1", "G0S2", "AIF1", "CXCL8", "FCER1G"),
+                        features = d$gene[d$cluster_id == "12"],
+                         sort.cell = TRUE,
+                         min.cutoff = 'q10', 
+                         label = TRUE,
+                         repel = TRUE)
+dev.off()
+
+```
+So it seems clusters 1,4,8,12,13 and 16 are the same cell type with minor subtypes.However cluster 5 and 7 showing some level of expression for markers in cluster 1 + 4, but they need separate inspection. 
+Conserved markers in these two clusters are as follow
+
+```
+[1] "LDB2"    "SPARCL1" "GNG11"   "FLT1"    "IFI27"   "RAMP2"   "PECAM1"
+[8] "TCF4"    "PLVAP"   "PCAT19"  "ACKR1"   "SELE"    "CALCRL"  "ZNF385D"
+[15] "ADAMTS9" "MCTP1"   "AQP1"    "VWF"     "CCL14"   "PCAT19"
+```
+
+| cell type                | genes                                                 |
+|--------------------------|-------------------------------------------------------|
+| Endothelial cells        | LDB2, SPARCL1, FLT1,IFI27,RAMP2,PECAM1,TCF4,PLVAP,PCAT19,ACKR1, SELE,CALCRL,ZNF385D,ADAMTS9,MCTP1,AQP1,VWF,                     |
+| Fibroblast              | SPARCL1,TCF4,PLVAP,ADAMTS9                                |
+
+
+
+```R
+png(filename = "umap_cluster5_7_markers.png", width = 26, height = 18.135, units = "in", res = 300)
+FeaturePlot(object = seurat_integrated, 
+                        features = d$gene[d$cluster_id %in% c("5", "7")],
+                         sort.cell = TRUE,
+                         min.cutoff = 'q10', 
+                         label = TRUE,
+                         repel = TRUE)
+dev.off()
+
+
+# Vln plot - cluster 0
+png(filename = "violin_cluster5_7_markers.png", width = 16, height = 8.135, units = "in", res = 300)
+VlnPlot(object = seurat_integrated, 
+        features = d$gene[d$cluster_id == "4"])
+dev.off()
+```
+So as expected cluster 7 and 5 representing same cell types. 
+In almost all cases cluster 17 showed some level of expression for EC markers. 
+
+Lets now have a look at markers for clusters 6,15 and 11:
+
+```R
+png(filename = "umap_cluster11_15_6_markers.png", width = 26, height = 18.135, units = "in", res = 300)
+FeaturePlot(object = seurat_integrated, 
+                        features = unique(d$gene[d$cluster_id %in% c("6", "11","15")]),
                          sort.cell = TRUE,
                          min.cutoff = 'q10', 
                          label = TRUE,
                          repel = TRUE)
 dev.off()
 ```
+According to the markers such ass different collagen, clusters 11 and 15 seem to be fibroblasts while cluster 6 showing a mix of fibroblast and non-fibroblast markers.
 
-Since cluster 21 is not a large cluster , so we are going to inspect other clusters;
+Now we can generate UMAP with cell type as labels;
 
-``` r
-cluster_1_conserved_markers <- conserved_markers %>%
-                              filter(cluster_id == '1') %>% 
-                              mutate(avg_fc = (Normal_avg_log2FC + BLCA_avg_log2FC) /2) %>% 
-                              top_n(n = 10, wt = avg_fc)
-```
-
--   Identifying gene markers for each cluster
-
-``` r
-# Determine differentiating markers for CD4+ T cell 
-
-cd4_tcells <- FindMarkers(seurat_integrated, ident.1 = 2, ident.2 = c(0,4,10,18))
-
-# Add gene symbols to the DE table
-
-cd4_tcells <- cd4_tcells %>% 
-        rownames_to_column(var = "gene") %>% 
-        left_join(y = unique(annotations[, c("gene_name", "description")]), by = c("gene" = "gene_name"))
-
-# Reorder columns and sort by padj
-
-cd4_tcells <- cd4_tcells[, c(1, 3:5,2,6:7)]
-
-cd4_tcells <- cd4_tcells %>% dplyr::arrange(p_val_adj)
-
-# View data
-
-head(cd4_tcells)
-
-# Plot gene markers of activated and naive/memory T cells
-
-FeaturePlot(seurat_integrated, reduction = "umap", features = c("CREM", "CD69", "CCR7", "SELL"), label = TRUE, sort.cell = TRUE, min.cutoff = 'q10', repel = TRUE )
-
+```R
 # Rename all identities
+seurat_integrated <- RenameIdents(object = seurat_integrated, 
+                               "0" = "Basal cells",
+                               "1" = "Gamma delta T cell", # NKG7 and GZMK
+                               "2" = "Basal cells",
+                               "3" = "Basal cells",
+                               "4" = "T cells",
+                               "5" = "Endothelial cells",
+                               "6" = "Fibroblast",
+                               "7" = "Endothelial cells",
+                               "8" = "DC",
+                               "9" = "Basal cells",
+                               "10" = "Basal cells",
+                               "11" = "Fibroblast",
+                               "12" = "T cells",
+                               "13" = "T cells",
+                               "14" = "Basal cells",
+                               "15" = "Fibroblast",
+                               "16" = "T cells",
+                               "17" = "?", 
+                               "18" = "Basal cells", 
+                               "19" = "Plasma cells",
+                               "20" = "Basal cells",
+                               "21" = "Basal cells")
 
-seurat_integrated <- RenameIdents(object = seurat_integrated, "0" = "Naive or memory CD4+ T cells", "1" = "CD14+ monocytes", "2" = "Naive or memory CD4+ T cells", "3" = "CD14+ monocytes", "4" = "CD4+ T cells", "5" = "CD8+ T cells", "6" = "B cells", "7" = "Stressed cells / Activated T cells", "8" = "NK cells", "9" = "FCGR3A+ monocytes", "10" = "CD4+ T cells", "11" = "B cells", "12" = "NK cells", "13" = "CD8+ T cells", "14" = "CD14+ monocytes", "15" = "Conventional dendritic cells", "16" = "Megakaryocytes", "17" = "B cells", "18" = "CD4+ T cells", "19" = "Plasmacytoid dendritic cells", "20" = "Mast cells")
-
-# Plot the UMAP
-
-DimPlot(object = seurat_integrated, reduction = "umap", label = TRUE, label.size = 3, repel = TRUE)
-
-# Remove the stressed or dying cells
-
-seurat_subset_labeled <- subset(seurat_integrated, idents = "Stressed cells / Activated T cells", invert = TRUE)
-
-# Re-visualize the clusters
-
-DimPlot(object = seurat_subset_labeled, reduction = "umap", label = TRUE, label.size = 3, repel = TRUE)
-
-# Save final R object
-
-write_rds(seurat_integrated, path = "results/seurat_labelled.rds")
+# Plot the UMAP withy new labells
+png(filename = "umap_with_label.png", width = 16, height = 8.135, units = "in", res = 600)
+DimPlot(object = seurat_integrated, 
+        reduction = "umap", 
+        label = TRUE,
+        label.size = 3,
+        repel = TRUE)
+dev.off()
 ```
+OK then it's time to write the Seurat object for later analysis , if any:
 
-To be able to color UMAP plots based on other types of data like grade, and metastasis we need to add relevant data to the Seurat object data;
+```R
+# Save final R object
+write_rds(seurat_integrated,
+          path = "seurat_labelled.rds")      
+```
