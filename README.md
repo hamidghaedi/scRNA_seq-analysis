@@ -99,7 +99,7 @@ Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy t
 
 ``` shell
 #!/bin/bash
-#SBATCH --account=def-gooding-ab
+#SBATCH --account=#
 #SBATCH -J test_cellranger
 #SBATCH --export=ALL
 #SBATCH --ntasks=1
@@ -114,7 +114,7 @@ Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy t
 #SBATCH --output=test_cellranger.%J.out
 #SBATCH --error=test_cellranger.%J.err
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=qaedi.65@gmail.com
+#SBATCH --mail-user=#
 
 
 module load cellranger
