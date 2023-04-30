@@ -99,7 +99,7 @@ Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy t
 
 ``` shell
 #!/bin/bash
-#SBATCH --account=def-gooding-ab
+#SBATCH --account=#
 #SBATCH -J test_cellranger
 #SBATCH --export=ALL
 #SBATCH --ntasks=1
@@ -114,7 +114,7 @@ Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy t
 #SBATCH --output=test_cellranger.%J.out
 #SBATCH --error=test_cellranger.%J.err
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=qaedi.65@gmail.com
+#SBATCH --mail-user=#
 
 
 module load cellranger
@@ -1192,21 +1192,4 @@ DimPlot(seurat_integrated,
 
 dev.off()
 
-```
-
-To show clusters of samples with :
-
-- basal markers: KRT6, KRT6, KRT14, KRT20
-
-- Luminal markers: GATA3
-
-```R
-png(filename = "db_gata3_krts.png", width = 16, height = 8.135, units = "in", res = 300)
-FeaturePlot(object = seurat_integrated, 
-                        features = c("GATA3", "KRT5", "KRT14", "KRT20"),
-                         sort.cell = TRUE,
-                         min.cutoff = 'q10', 
-                         label = TRUE,
-                         repel = TRUE)
-dev.off()
 ```
