@@ -245,19 +245,24 @@ bqcc <- metadata %>%
   ggtitle("NCells before QC")
 ```
 ![cell_count_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cell_count_per_sample_before_QC.png)
-#### UMI per cell
 
+#### UMI per cell
+Typically, we expect the UMI counts per cell to be higher than 500, which is the lower limit of the expected range. If the UMI counts range between 500-1000, the data is still usable, but deeper sequencing may have been beneficial for these cells.
 ``` r
 # Visualize the number UMIs/transcripts per cell
 metadata %>% 
-  ggplot(aes(color=seq_folder, x=nUMI, fill= sample)) + 
-  geom_density(alpha = 0.2) + 
+  ggplot(aes(x=nUMI, fill= sample)) + 
+  geom_density(alpha = 0.5) + 
   scale_x_log10() + 
   theme_classic() +
   ylab("Cell density") +
-  geom_vline(xintercept = 500)
+  facet_wrap(~seq_folder) +
+  geom_vline(xintercept = 1000) +
+  labs(fill = "Sample")
   
 ```
+![cell_count_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/nUMI.png)
+So the cells have way more than 1K UMI! 
 
 #### Genes detected per cell
 
