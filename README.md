@@ -1193,3 +1193,20 @@ DimPlot(seurat_integrated,
 dev.off()
 
 ```
+
+To show clusters of samples with :
+
+- basal markers: KRT6, KRT6, KRT14, KRT20
+
+- Luminal markers: GATA3
+
+```R
+png(filename = "db_gata3_krts.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = seurat_integrated, 
+                        features = c("GATA3", "KRT5", "KRT14", "KRT20"),
+                         sort.cell = TRUE,
+                         min.cutoff = 'q10', 
+                         label = TRUE,
+                         repel = TRUE)
+dev.off()
+```
