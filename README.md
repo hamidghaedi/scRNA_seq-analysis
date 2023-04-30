@@ -244,7 +244,7 @@ bqcc <- metadata %>%
   theme(plot.title = element_text(hjust=0.5, face="bold")) +
   ggtitle("NCells before QC")
 ```
-
+![cell_count_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cell_count_per_sample_before_QC.png)
 #### UMI per cell
 
 ``` r
