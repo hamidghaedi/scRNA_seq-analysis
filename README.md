@@ -340,52 +340,35 @@ metadata %>%
 
 There are samples that shows high-quality cells ; high nUMI, high nGene, low number of cells with high mitoRatio and also there are some samples that would clearely benfit from filtering, as they have low quality cells. We expect to see that dying cells to show high level of mitoRatio and low nUMI and nGene . 
 
-Basically, it is not uncommon to observe cells with high numbers of UMIs and nGene with, but also high mioRatio. These cells may be stressed or damaged, but they could also represent a heterogeneous population of cells with distinct metabolic states.
+Basically, it is not uncommon to observe cells with high numbers of UMIs and nGene with, but also high mitoRatio. These cells may be stressed or damaged, but they could also represent a heterogeneous population of cells with distinct metabolic states.
 
 To investigate the potential cause of high mitochondrial expression ratios, it is important to examine the expression of specific mitochondrial genes and compare them to other genes in the cell. If the expression of mitochondrial genes is elevated relative to other genes, this could suggest mitochondrial dysfunction. Additionally, examining the expression of other stress or damage markers, such as heat shock proteins or cell cycle genes, can also provide insight into the health and state of the cell.
 
-
-#### Checking for cells with low numbers of genes/UMIs
-
-``` r
-# Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
-metadata %>% 
-  ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
-  geom_point() + 
-  scale_colour_gradient(low = "gray90", high = "black") +
-  stat_smooth(method=lm) +
-  scale_x_log10() + 
-  scale_y_log10() + 
-  theme_classic() +
-  geom_vline(xintercept = 500) +
-  geom_hline(yintercept = 250) +
-  facet_wrap(~sample)
-```
 
 ### Filtering
 
 #### Cell-level filtering
 
--nUMI \> 500
+-nUMI > 1000
 
--nGene \> 250
+-nGene > 500
 
--log10GenesPerUMI \> 0.8
+-log10GenesPerUMI > 0.8
 
--mitoRatio \< 0.2
+-mitoRatio < 0.2
 
 ``` r
 # Filter out low quality cells using selected thresholds - these will change with experiment
 filtered_seurat <- subset(merged_seurat, 
-                          subset= nUMI >= 500 & 
-                          nGene >= 250 & 
+                          subset= nUMI >= 1000 & 
+                          nGene >= 500 & 
                           log10GenesPerUMI > 0.80 & 
                           mitoRatio < 0.20)
 ```
 
 #### Gene-level filtering
 
-Keep only genes which are expressed in 10 or more cells
+Keep only genes which are expressed in 100 or more cells (usually thi is 10)
 
 ``` r
 # Extract counts
@@ -393,10 +376,10 @@ counts <- GetAssayData(object = filtered_seurat, slot = "counts")
 
 # Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
 nonzero <- counts > 0
-# Sums all TRUE values and returns TRUE if more than 10 TRUE values per gene
-keep_genes <- Matrix::rowSums(nonzero) >= 10
+# Sums all TRUE values and returns TRUE if more than 100 TRUE values per gene
+keep_genes <- Matrix::rowSums(nonzero) >= 100
 
-# Only keeping those genes expressed in more than 10 cells
+# Only keeping those genes expressed in more than 100 cells
 filtered_counts <- counts[keep_genes, ]
 # Reassign to filtered Seurat object
 filtered_seurat <- CreateSeuratObject(filtered_counts, meta.data = filtered_seurat@meta.data)
@@ -412,19 +395,33 @@ save(filtered_seurat, file="seurat_filtered.RData")
 # Save filtered subset to new metadata
 metadata_clean <- filtered_seurat@meta.data
 
-# Visualize the number of cell counts per sample
-aqcc <- metadata_clean %>% 
-  ggplot(aes(x=seq_folder, fill=sample)) + 
-  geom_bar() +
+# to see drop in filtering cells:
+
+met_before <- data.frame(unclass(table(metadata$seq_folder)))
+met_before$group <- "before"
+met_before$cell<- rownames(met_before)
+names(met_before)[1] <- 'count'
+
+met_after <- data.frame(unclass(table(metadata_clean$seq_folder)))
+met_after$group <- "after"
+met_after$cell<- rownames(met_after)
+names(met_after)[1] <- 'count'
+# count
+cell_count <- data.frame(rbind(met_before, met_after))
+
+                                
+# visualization :
+cell_count %>% ggplot(aes(x=cell, y=count, fill=group)) + 
+  geom_bar(stat="identity", position=position_dodge()) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   theme(plot.title = element_text(hjust=0.5, face="bold")) +
-  ggtitle("NCells after QC")
+  scale_fill_manual(values = c("#808080", "#FFBF00"))
+  ggtitle("nCells count before and after QC")
+```
+![cell_countbefore_after_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/before_after_cell_count.png)
 
-# cell count before and after QC
-bqcc + aqcc
-
-
+```r
 # Visualize the number UMIs/transcripts per cell
 metadata_clean %>% 
   ggplot(aes(color=seq_folder, x=nUMI, fill= sample)) + 
