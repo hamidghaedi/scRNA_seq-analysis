@@ -285,14 +285,20 @@ metadata %>%
 
 #### Novelty score
 
+The novelty score, computed as the ratio of nGenes over nUMI, measures the complexity of RNA species in each cell. A low number of genes detected in a cell with many captured transcripts (high nUMI) indicates low complexity or novelty. This could be due to an artifact, contamination, or represent a specific cell type (e.g. red blood cells). A good quality cell typically has a novelty score above 0.80.
+
 ``` r
 # Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
 metadata %>%
-  ggplot(aes(x=log10GenesPerUMI, color = sample, fill=sample)) +
-  geom_density(alpha = 0.2) +
+  ggplot(aes(x=log10GenesPerUMI, fill=sample)) +
+  geom_density(alpha = 0.5) +
   theme_classic() +
+  facet_wrap(~seq_folder) +
+  xlab("Novelty Score") +
   geom_vline(xintercept = 0.8)
 ```
+![gene_count_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/novelt_score_before_QC.png)
+
 
 #### Mitochondrial gene expression detected per cell
 
