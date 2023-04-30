@@ -302,15 +302,26 @@ metadata %>%
 
 #### Mitochondrial gene expression detected per cell
 
+High level of expression from mitochondria indicate dying or dead cells. Basically poor quality samples are those that surpass 0.2 mitochondria ratio mark. 
+
 ``` r
 # Visualize the distribution of mitochondrial gene expression detected per cell
-metadata %>% 
-  ggplot(aes(color=seq_folder, x=mitoRatio, fill=sample)) + 
-  geom_density(alpha = 0.2) + 
+metadata %>%
+  ggplot(aes(x=mitoRatio, fill=sample)) + 
+  geom_density(alpha = 0.5) + 
   scale_x_log10() + 
+  scale_x_continuous(labels = function(x) sprintf("%.1f", x)) + 
   theme_classic() +
+  facet_wrap(~seq_folder) +
   geom_vline(xintercept = 0.2)
+
 ```
+![mitoRatio_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/mitoRatio_before_qc.png)
+
+
+#### Visualization of nUMI, nGene and mitoRatio
+
+
 
 #### Checking for cells with low numbers of genes/UMIs
 
