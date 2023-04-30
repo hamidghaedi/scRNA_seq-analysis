@@ -319,8 +319,30 @@ metadata %>%
 ![mitoRatio_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/mitoRatio_before_qc.png)
 
 
-#### Visualization of nUMI, nGene and mitoRatio
+#### Joint filtering: nUMI, nGene and mitoRatio
 
+```r
+# Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
+
+metadata %>% 
+  	ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
+  	geom_point() + 
+  	scale_colour_gradient(low = "gray90", high = "black") +
+  	stat_smooth(method=lm) +
+  	scale_x_log10() + 
+  	scale_y_log10() + 
+  	theme_classic() +
+  	geom_vline(xintercept = 1000) +
+  	geom_hline(yintercept = 500) +
+  	facet_wrap(~seq_folder)
+```
+![mitoRatio_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/nUMI_nGene_mitoRatio.png)
+
+There are samples that shows high-quality cells ; high nUMI, high nGene, low number of cells with high mitoRatio and also there are some samples that would clearely benfit from filtering, as they have low quality cells. We expect to see that dying cells to show high level of mitoRatio and low nUMI and nGene . 
+
+Basically, it is not uncommon to observe cells with high numbers of UMIs and nGene with, but also high mioRatio. These cells may be stressed or damaged, but they could also represent a heterogeneous population of cells with distinct metabolic states.
+
+To investigate the potential cause of high mitochondrial expression ratios, it is important to examine the expression of specific mitochondrial genes and compare them to other genes in the cell. If the expression of mitochondrial genes is elevated relative to other genes, this could suggest mitochondrial dysfunction. Additionally, examining the expression of other stress or damage markers, such as heat shock proteins or cell cycle genes, can also provide insight into the health and state of the cell.
 
 
 #### Checking for cells with low numbers of genes/UMIs
