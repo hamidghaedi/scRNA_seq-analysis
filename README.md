@@ -265,16 +265,23 @@ metadata %>%
 So the cells have way more than 1K UMI! 
 
 #### Genes detected per cell
+In scRNA-seq, the number of genes detected per cell is a crucial quality metric that we expect to be similar to the UMI detection, albeit slightly lower. For high-quality data, the proportional histogram of genes detected per cell should show a single peak that represents encapsulated cells. However, if there is a small shoulder or a bimodal distribution to the left of the main peak, this could indicate a few things. It could be due to some failed cells or biologically different cell types, such as quiescent cell populations or less complex cells of interest. For instance, larger cells or different cell types may have higher gene counts.
+
 
 ``` r
 # Visualize the distribution of genes detected per cell via histogram
 metadata %>% 
-  ggplot(aes(color=seq_folder, x=nGene, fill= sample)) + 
-  geom_density(alpha = 0.2) + 
-  theme_classic() +
+  ggplot(aes(x=nGene, fill= sample)) + 
+  geom_density(alpha = 0.5) + 
   scale_x_log10() + 
-  geom_vline(xintercept = 300)
+  theme_classic() +
+  ylab("Cell density") +
+  facet_wrap(~seq_folder) +
+  geom_vline(xintercept = 500) +
+  labs(fill = "Sample")
+  
 ```
+![gene_count_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/nGene_before_QC.png)
 
 #### Novelty score
 
