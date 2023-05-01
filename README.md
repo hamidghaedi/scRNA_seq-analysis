@@ -578,6 +578,7 @@ This method is more accurate method of normalizing, estimating the variance of t
 #### Integration
 
 To improve clustering and downstream analyses, it can be beneficial to integrate or align samples across groups using shared highly variable genes. If cells cluster by sample, condition, batch, dataset, or modalities(scRNA, scATAC-seq), integration can help to remove these unwanted sources of variation. For example, if we want to integrate normal samples together and BLCA samples together, we should keep each sample as a separate object and transform them accordingly for integration. This is necessary to ensure that the samples are properly aligned and that downstream analyses are meaningful.
+If cell types are present in one dataset, but not the other, then the cells will still appear as a separate sample-specific cluster.
 
 
 ``` r
@@ -591,6 +592,24 @@ split_seurat <- SplitObject(seurat_phase, split.by = "sample")
 for (i in 1:length(split_seurat)) {
     split_seurat[[i]] <- SCTransform(split_seurat[[i]], vars.to.regress = c("mitoRatio", "S.Score", "G2M.Score"))
     }
+
+# to see what the component of the object are. 
+
+split_seurat    
+$Normal
+An object of class Seurat
+47302 features across 21519 samples within 2 assays
+Active assay: SCT (23608 features, 3000 variable features)
+ 1 other assay present: RNA
+ 1 dimensional reduction calculated: pca
+
+$BLCA
+An object of class Seurat
+47388 features across 70708 samples within 2 assays
+Active assay: SCT (23694 features, 3000 variable features)
+ 1 other assay present: RNA
+ 1 dimensional reduction calculated: pca
+
     
 # Select the most variable features to use for integration
 integ_features <- SelectIntegrationFeatures(object.list = split_seurat, 
@@ -611,7 +630,6 @@ seurat_integrated <- IntegrateData(anchorset = integ_anchors,
                                    
 # Check assays in the object:
 split_seurat$Normal@assays
-
                                    
 ```
 
@@ -665,7 +683,10 @@ png(filename = "PCA_integrated.png", width = 16, height = 8.135, units = "in", r
 PCAPlot(seurat_integrated,
         split.by = "sample")
 dev.off()
+```
+![plot-PCA](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/mitoExpression_effect.png)
 
+```r
 # Run UMAP
 seurat_integrated <- RunUMAP(seurat_integrated, 
                              dims = 1:40,
