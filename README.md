@@ -910,11 +910,11 @@ DimPlot(seurat_integrated,
         label = TRUE, 
         split.by = "sample")  + NoLegend()
 dev.off()
+```
+![umap_cluster_sample.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster_sample.png)
 
 
-
-
-
+```r
 # Segregation of clusters by cell cycle phase (unwanted source of variation) 
 # Explore whether clusters segregate by cell cycle phase
 
@@ -924,6 +924,8 @@ DimPlot(seurat_integrated,
         split.by = "Phase")  + NoLegend()
 dev.off()
 ```
+![umap_cluster_cell_cucle.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster_cell_cucle.png)
+
 
 -   Segregation of clusters by various sources of uninteresting variation
 
@@ -942,6 +944,8 @@ FeaturePlot(seurat_integrated,
             label = TRUE)
 dev.off()
 ```
+![umap_unwanted_source_clustering.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_unwanted_source_clustering.png)
+
 
 -   Exploration of the PCs driving the different clusters
 
@@ -986,8 +990,11 @@ map(paste0("PC_", 1:18), function(pc){
 }) %>% 
         plot_grid(plotlist = .)
 dev.off()
+```
+![umap_on_pcs.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_on_pcs.png)
 
 
+```r
 # Examine PCA results 
 print(seurat_integrated[["pca"]], dims = 1:5, nfeatures = 5)
 ```
@@ -1004,7 +1011,10 @@ FeaturePlot(seurat_integrated,
             min.cutoff = 'q10', 
             label = TRUE)
 dev.off()
+```
+![umap_fibroblast.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_fibroblast.png)
 
+```r
 png(filename = "umap_endothelial.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(seurat_integrated, 
             reduction = "umap", 
@@ -1014,7 +1024,10 @@ FeaturePlot(seurat_integrated,
             label = TRUE)
 dev.off()
 
+```
+![umap_endothelial.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_endothelial.png)
 
+``` r
 png(filename = "umap_t_cells.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(seurat_integrated, 
             reduction = "umap", 
@@ -1024,6 +1037,7 @@ FeaturePlot(seurat_integrated,
             label = TRUE)
 dev.off()
 ```
+![umap_t_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_t_cells.png)
 
 ### Marker identification
 
@@ -1145,7 +1159,10 @@ FeaturePlot(object = seurat_integrated,
                          label = TRUE,
                          repel = TRUE)
 dev.off()
+```
+![umap_high_freq_basal_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_high_freq_basal_cells.png)
 
+```r
 
 # Vln plot - cluster 0
 png(filename = "violin_high_freq_basal_cells.png", width = 16, height = 8.135, units = "in", res = 300)
@@ -1153,6 +1170,9 @@ VlnPlot(object = seurat_integrated,
         features = c("KRT7", "KRT19", "AQP3", "CD24", "FXYD3", "CXCL8"))
 dev.off() 
 ```
+![violin_high_freq_basal_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/violin_high_freq_basal_cells.png)
+
+
 So according to "basal cells" visualization , following clusters may show clusters of basal cells:
 0, 2,3,9,10,14,17,18,19(?),20 and 21.
 
@@ -1168,6 +1188,10 @@ FeaturePlot(object = seurat_integrated,
                          repel = TRUE)
 dev.off()
 
+```
+![umap_high_freq_Plasma_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_high_freq_Plasma_cells.png)
+
+```r
 
 # Vln plot - cluster 0
 png(filename = "violin_high_freq_basal_cells.png", width = 26, height = 10.135, units = "in", res = 600)
@@ -1175,6 +1199,8 @@ VlnPlot(object = seurat_integrated,
         features = c("IGHA1","IGHG1","IGHG3","IGHG4","IGKC","IGLC1","IGLC3","IGLC3","JCHAIN"))
 dev.off() 
 ```
+![violin_high_freq_basal_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/violin_high_freq_basal_cells.png)
+
 Cluster 19 looks to be hard to assign it a cell type. Will keep an eye on it.
 
 ```R
@@ -1188,14 +1214,18 @@ FeaturePlot(object = seurat_integrated,
                          label = TRUE,
                          repel = TRUE)
 dev.off()
+```
+![umap_high_freq_dc.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_high_freq_dc.png)
 
-
+```r
 # Vln plot - cluster 0
 png(filename = "violin_high_freq_dc.png", width = 16, height = 8.135, units = "in", res = 300)
 VlnPlot(object = seurat_integrated, 
         features = c("FCER1G","AIF1","FABP4"))
 dev.off() 
 ```
+![violin_high_freq_dc.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/violin_high_freq_dc.png)
+
 
 For cluster1 and 4
 
@@ -1211,13 +1241,20 @@ FeaturePlot(object = seurat_integrated,
                          repel = TRUE)
 dev.off()
 
+```
+![umap_cluster4_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster4_markers.png)
+
+```r
 
 # Vln plot - cluster 0
 png(filename = "violin_cluster4_markers.png", width = 16, height = 8.135, units = "in", res = 300)
 VlnPlot(object = seurat_integrated, 
         features = d$gene[d$cluster_id == "4"])
 dev.off() 
+```
+![violin_cluster4_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/violin_cluster4_markers.png)
 
+```r
 png(filename = "umap_cluster12_markers.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(object = seurat_integrated, 
                         features = d$gene[d$cluster_id == "12"],
@@ -1228,6 +1265,8 @@ FeaturePlot(object = seurat_integrated,
 dev.off()
 
 ```
+![umap_cluster12_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster12_markers.png)
+
 So it seems clusters 1,4,8,12,13 and 16 are the same cell type with minor subtypes.However cluster 5 and 7 showing some level of expression for markers in cluster 1 + 4, but they need separate inspection. 
 Conserved markers in these two clusters are as follow
 
@@ -1254,13 +1293,19 @@ FeaturePlot(object = seurat_integrated,
                          repel = TRUE)
 dev.off()
 
+```
+![umap_cluster5_7_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster5_7_markers.png)
 
+```r
 # Vln plot - cluster 0
 png(filename = "violin_cluster5_7_markers.png", width = 16, height = 8.135, units = "in", res = 300)
 VlnPlot(object = seurat_integrated, 
         features = d$gene[d$cluster_id == "4"])
 dev.off()
 ```
+![violin_cluster5_7_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/violin_cluster5_7_markers.png)
+
+
 So as expected cluster 7 and 5 representing same cell types. 
 In almost all cases cluster 17 showed some level of expression for EC markers. 
 
@@ -1276,6 +1321,9 @@ FeaturePlot(object = seurat_integrated,
                          repel = TRUE)
 dev.off()
 ```
+![umap_cluster11_15_6_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster11_15_6_markers.png)
+
+
 According to the markers such ass different collagen, clusters 11 and 15 seem to be fibroblasts while cluster 6 showing a mix of fibroblast and non-fibroblast markers.
 
 Now we can generate UMAP with cell type as labels;
@@ -1315,6 +1363,8 @@ DimPlot(object = seurat_integrated,
         repel = TRUE)
 dev.off()
 ```
+![umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_with_label.png)
+
 OK then it's time to write the Seurat object for later analysis , if any:
 
 ```R
@@ -1382,3 +1432,4 @@ DimPlot(seurat_integrated,
 dev.off()
 
 ```
+![umap_with_label_scType.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_with_label_scType.png)
