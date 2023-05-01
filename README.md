@@ -211,6 +211,9 @@ metadata$cells <- rownames(metadata)
 # adding sample type to metadata. The orginal file could be download from SRA explorer
 
 SampleType <- c("BLCA", "BLCA", "Normal", "BLCA", "BLCA", "BLCA", "BLCA", "BLCA", "BLCA", "Normal", "Normal")
+# sample type with grade (Not tested)
+#SampleType <- c("BLCA_LG", "BLCA_LG", "Normal", "BLCA_HG", "BLCA_HG", "BLCA_HG", "BLCA_HG", "BLCA_HG", "BLCA_HG", "Normal", "Normal")
+
 names(SampleType) <- c("SRR12603789", "SRR12603790", "SRR12603788", "SRR12603787", "SRR12603786", "SRR12603785", "SRR12603784", "SRR12603783", "SRR12603782", "SRR12603781", "SRR12603780")
 
 metadata$sampleType <- stringr::str_replace_all(metadata$orig.ident, SampleType)
@@ -440,11 +443,31 @@ metadata_clean %>%
 ```
 ![nUMI_nGene_mitoRatio_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/nUMI_nGene_mitoRatio_after.png)
 
-## 5) Normalization and regressing out unwanted variation
+## 5) Clustering
 
-### Explore sources of unwanted variation
+The ultimate goal is to define clusters of cells and identify cell types in the samples. To achieve this, there are several steps:
 
+1-Identify unwanted variability by exploring data and covariates such as cell cycle and mitochondrial gene expression.
 Both biological source of variation (e.g. effect of cell cycle on transcriptome) and technical source should be explored and account for. In early version of Seurat one needs to normalize data, find variable features and then scale data while setting a variable like mitochondrial contamination or cell cycle stage to be regressed out. So here is code for doing these steps to mitigate cell cycle stage effects on the dataset, however a newer function in Seurat has automated all of these steps (`SCTtansform()`).
+
+2-Normalize and remove unwanted variability using Seurat's `sctransform` function. The normalization step is necessary to make expression counts comparable across genes and/or samples. The counts of mapped reads for each gene is proportional to the expression of RNA (“interesting”) in addition to many other factors (“uninteresting” such as sequencing depth and gene length). Normalization is the process of adjusting raw count values to account for the “uninteresting” factors.
+For simplicity , normalization is assumed as two step process: scaling and transforming.
+In scaling the goal is to multiply each UMI count by a cell specific factor to get all cells to have the same UMI counts.For transformation simple approaches like log-transformation showed to be not that useful, especially in the case of genes with high expression but showing decent performance for low/intreemediate expressed genes. So we cannot treat all genes the same.
+The proposed solution for data transformation is Pearson residuals (inmplemented in Seurat's `SCTransform` function), which applies a gene-specific weight to each measurement based on the evidence of non-uniform expression across cells. This weight is higher for genes expressed in a smaller fraction of cells, making it useful for detecting rare cell populations. The weight takes into account not just the expression level but also the distribution of expression.
+
+
+3- Integrate data using Seurat's method to compare celltype expression between groups.
+
+4-Cluster cells based on similarity of gene expression profiles using Seurat's PCA scores.
+
+5-Evaluate cluster quality by checking for sources of uninteresting variation, principal component influence, and exploring cell type identities using known markers.
+
+
+### Exploring sources of unwanted variation
+
+#### Evaluating effects of cell cycle and mitochondrial expression
+
+We will score the cells for cell cycle genes, and then determine whether cell cycle is a major source of variation in our dataset using PCA.
 
 ``` r
 # Normalize the counts
@@ -461,7 +484,16 @@ seurat_phase <- CellCycleScoring(seurat_phase,
 
 # View cell cycle scores and phases assigned to cells                                 
 #View(seurat_phase@meta.data) 
+table(seurat_phase$Phase)
+```
+Cells in different cell cycle stages:
 
+   G1   G2M     S 
+54106 12680 25441 
+
+So most of the cells are in G1 and then S, which make sense.
+
+```r
 # Identify the most variable genes and scaling them
 seurat_phase <- FindVariableFeatures(seurat_phase, 
                      selection.method = "vst",
@@ -475,14 +507,17 @@ top10 <- head(VariableFeatures(seurat_phase), 10)
 plot1 <- VariableFeaturePlot(seurat_phase)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot1 + plot2
+```
+![variable_feature](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/variable_features.png)
 
 
+```r
 # Check quartile values for mitoRatio, we will use this variable later to mitigate unwanted source of variation in dataset
 summary(seurat_phase@meta.data$mitoRatio)
 
 # Turn mitoRatio into categorical factor vector based on quartile values
 seurat_phase@meta.data$mitoFr <- cut(seurat_phase@meta.data$mitoRatio, 
-                   breaks=c(-Inf, 0.015, 0.025, 0.047, Inf), 
+                   breaks=c(-Inf, 0.015, 0.025, 0.045, Inf), 
                    labels=c("Low","Medium","Medium high", "High"))
 
 
@@ -490,8 +525,82 @@ seurat_phase@meta.data$mitoFr <- cut(seurat_phase@meta.data$mitoRatio,
 # Scale the counts
 # This step is essential for PCA , clustering and heatmap generation
 seurat_phase <- ScaleData(seurat_phase)
-saveRDS(seurat_phase, "seurat_phase.rds")
+#saveRDS(seurat_phase, "seurat_phase.rds")
+
+# Perform PCA
+seurat_phase <- RunPCA(seurat_phase)
 ```
+PC_ 1 
+Positive:  IGFBP7, A2M, CALD1, SPARC, MGP, SPARCL1, COL4A2, VIM, RBMS3, NNMT 
+	   TCF4, COL4A1, COL6A2, LHFPL6, IGFBP4, GNG11, FSTL1, SERPING1, GSN, PALM2-AKAP2 
+	   PTPRG, FBXL7, COL6A1, COL1A2, CAV1, ADAMTS9, PMP22, DLC1, LDB2, HTRA1 
+Negative:  KRT7, PSCA, DHRS2, C10orf99, CSTB, KRT17, RPS19, S100A14, AQP3, LYPD3 
+	   GDF15, LIPH, AKR1C2, FABP5, KRT13, TSPAN1, AC019117.2, UPK1B, SPINK1, SCHLAP1 
+	   CRABP2, CXCL17, MACC1, RAB3IP, HPGD, DMKN, UCA1, TMEM97, ADGRF1, FA2H 
+PC_ 2 
+Positive:  PCAT19, PECAM1, PLVAP, CALCRL, ADGRL4, AQP1, EMCN, ECSCR, RAMP2, MCTP1 
+	   VWF, RAMP3, DIPK2B, FLT1, CLDN5, ZNF385D, CD93, PCDH17, SLCO2A1, ERG 
+	   RAPGEF4, EGFL7, CYYR1, ACKR1, FAM167B, RHOJ, LDB2, CLEC14A, DOCK4, RNASE1 
+Negative:  COL1A2, COL1A1, DCN, COL3A1, COL6A3, RARRES2, COL6A1, PCOLCE, FBLN1, LUM 
+	   SERPINF1, C1S, TPM2, COL6A2, C1R, GPC6, SOD3, COL14A1, MFAP4, MEG3 
+	   EMILIN1, MXRA8, PRKG1, CTSK, COL5A2, AEBP1, CRISPLD2, FGF7, ANTXR1, LSAMP 
+PC_ 3 
+Positive:  CD52, TYROBP, CORO1A, ITGB2, FCER1G, RGS1, AIF1, ALOX5AP, HLA-DPB1, IFI30 
+	   CRIP1, GPR183, RGS2, LST1, CCL5, MS4A6A, TRAC, CD69, HLA-DPA1, LYZ 
+	   CCL4, HLA-DQA1, C1QA, IGKC, SPI1, C1QB, HLA-DRB1, S100A4, C1QC, FCGR2A 
+Negative:  KRT7, PSCA, CSTB, C10orf99, DHRS2, AKR1C3, S100A14, TSPAN1, GDF15, SEMA3C 
+	   S100A13, AQP3, AKR1C2, KRT17, FABP5, AKR1C1, SLC14A1, AC019117.2, SCHLAP1, CRABP2 
+	   CD24, SPTSSB, RAI14, TMEM141, CCND1, HMGCS2, CTSE, LIPH, SPINK1, DMKN 
+PC_ 4 
+Positive:  RGS5, FRZB, ACTA2, PPP1R14A, MYH11, COX4I2, NDUFA4L2, MYL9, GJA4, TAGLN 
+	   HEYL, PTP4A3, MUSTN1, CDH6, MCAM, TPPP3, MYLK, PLN, SEPTIN4, WFDC1 
+	   PDGFRB, PRKG1, ADRA2A, MAP1B, MFGE8, CRIP1, HIGD1B, EDNRA, TPM1, CACNA1C 
+Negative:  CFD, IGF1, PTGDS, PID1, SFRP2, TMEM176B, AIF1, CD68, C3, SFRP1 
+	   SOD2, PDPN, VCAN, MS4A6A, PTGS2, LYZ, LUM, BASP1, HLA-DRA, NEGR1 
+	   BNC2, C1QC, IFI30, CD14, LSAMP, C1QA, MMP2, TYROBP, TNFAIP6, TMEM176A 
+PC_ 5 
+Positive:  LCN15, CTSE, CRTAC1, LINC01088, PLA2G2A, CA9, SLC7A11-AS1, SLC8A1-AS1, CST1, TOX3 
+	   SPINK5, FABP4, REG4, ROBO2, GSTM3, SULT1C2, PTPRR, CXCL10, LINC02672, IVL 
+	   PNCK, AC096577.1, APOC1, AC078923.1, TCN1, PLAC8, PPP1R3C, UCA1, SPINK1, ANXA10 
+Negative:  KRT13, OLFM4, MUC4, SGMS2, CPA6, TRIM31, LYPD3, AGR3, SGPP2, TFPI2 
+	   DSG3, SLPI, CXCL17, LIPH, ADGRF1, MACC1, GALNT5, PCDH7, AC022874.1, HBEGF 
+	   ITGA2, LMO7, AREG, PLAT, FGFBP1, ALDH1A3, TM4SF1, AL589693.1, CLDN3, NEBL 
+
+```
+# Plot the PCA colored by cell cycle phase
+no_split <- DimPlot(seurat_phase,
+        reduction = "pca",
+        group.by= "Phase")
+        
+with_split <- DimPlot(seurat_phase,
+        reduction = "pca",
+        group.by= "Phase",
+        split.by= "Phase")
+        
+no_split + with_split
+
+```
+![cell_cycle_effect](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cell_cycle_PCA.png)
+
+
+For mitochondrial expression:
+```r
+# Plot the PCA colored by mitochondrial expression
+no_split <- DimPlot(seurat_phase,
+        reduction = "pca",
+        group.by= "mitoFr")
+        
+with_split <- DimPlot(seurat_phase,
+        reduction = "pca",
+        group.by= "mitoFr",
+        split.by= "mitoFr")
+        
+no_split + with_split
+```
+![mito_expression_effect](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/mitoExpression_effect.png)
+
+Based on the above plots, we can see that cells are scattered regardless of their cell cycle phase and mitochondrial genes expression level. So there is no need to regress out the effect of cell cycle and mitochondrial expression in this dataset.
+
 
 ### SCTransform
 
