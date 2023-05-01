@@ -443,7 +443,7 @@ metadata_clean %>%
 ```
 ![nUMI_nGene_mitoRatio_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/nUMI_nGene_mitoRatio_after.png)
 
-## 5) Clustering
+## 5) Normalization, regressing out unwanted variation and clustering
 
 The ultimate goal is to define clusters of cells and identify cell types in the samples. To achieve this, there are several steps:
 
@@ -529,7 +529,7 @@ seurat_phase <- ScaleData(seurat_phase)
 
 # Perform PCA
 seurat_phase <- RunPCA(seurat_phase)
-```
+
 PC_ 1 
 Positive:  IGFBP7, A2M, CALD1, SPARC, MGP, SPARCL1, COL4A2, VIM, RBMS3, NNMT 
 	   TCF4, COL4A1, COL6A2, LHFPL6, IGFBP4, GNG11, FSTL1, SERPING1, GSN, PALM2-AKAP2 
@@ -567,6 +567,8 @@ Negative:  KRT13, OLFM4, MUC4, SGMS2, CPA6, TRIM31, LYPD3, AGR3, SGPP2, TFPI2
 	   ITGA2, LMO7, AREG, PLAT, FGFBP1, ALDH1A3, TM4SF1, AL589693.1, CLDN3, NEBL 
 
 ```
+
+```r
 # Plot the PCA colored by cell cycle phase
 no_split <- DimPlot(seurat_phase,
         reduction = "pca",
