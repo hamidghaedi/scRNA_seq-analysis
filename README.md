@@ -398,12 +398,12 @@ metadata_clean <- filtered_seurat@meta.data
 # to see drop in filtering cells:
 
 met_before <- data.frame(unclass(table(metadata$seq_folder)))
-met_before$group <- "before"
+met_before$QCgroup <- "before"
 met_before$cell<- rownames(met_before)
 names(met_before)[1] <- 'count'
 
 met_after <- data.frame(unclass(table(metadata_clean$seq_folder)))
-met_after$group <- "after"
+met_after$QCgroup <- "after"
 met_after$cell<- rownames(met_after)
 names(met_after)[1] <- 'count'
 # count
@@ -411,63 +411,34 @@ cell_count <- data.frame(rbind(met_before, met_after))
 
                                 
 # visualization :
-cell_count %>% ggplot(aes(x=cell, y=count, fill=group)) + 
+cell_count %>% ggplot(aes(x=cell, y=count, fill=QCgroup)) + 
   geom_bar(stat="identity", position=position_dodge()) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   theme(plot.title = element_text(hjust=0.5, face="bold")) +
-  scale_fill_manual(values = c("#808080", "#FFBF00"))
+  scale_fill_manual(values = c("#808080", "#FFBF00")) +
+  xlab("samples") +
   ggtitle("nCells count before and after QC")
 ```
 ![cell_countbefore_after_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/before_after_cell_count.png)
 
 ```r
-# Visualize the number UMIs/transcripts per cell
-metadata_clean %>% 
-  ggplot(aes(color=seq_folder, x=nUMI, fill= sample)) + 
-  geom_density(alpha = 0.2) + 
-  scale_x_log10() + 
-  theme_classic() +
-  ylab("Cell density") +
-  geom_vline(xintercept = 500)
-
-# Visualize the distribution of genes detected per cell via histogram
-metadata_clean %>% 
-  ggplot(aes(color=seq_folder, x=nGene, fill= sample)) + 
-  geom_density(alpha = 0.2) + 
-  theme_classic() +
-  scale_x_log10() + 
-  geom_vline(xintercept = 300)
-
-# Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
-metadata_clean %>%
-  ggplot(aes(x=log10GenesPerUMI, color = sample, fill=sample)) +
-  geom_density(alpha = 0.2) +
-  theme_classic() +
-  geom_vline(xintercept = 0.8)
-
-# Visualize the distribution of mitochondrial gene expression detected per cell
-metadata_clean %>% 
-  ggplot(aes(color=seq_folder, x=mitoRatio, fill=sample)) + 
-  geom_density(alpha = 0.2) + 
-  scale_x_log10() + 
-  theme_classic() +
-  geom_vline(xintercept = 0.2)
-
 # Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
+
 metadata_clean %>% 
-  ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
-  geom_point() + 
-  scale_colour_gradient(low = "gray90", high = "black") +
-  stat_smooth(method=lm) +
-  scale_x_log10() + 
-  scale_y_log10() + 
-  theme_classic() +
-  geom_vline(xintercept = 500) +
-  geom_hline(yintercept = 250) +
-  facet_wrap(~sample)
+  	ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
+  	geom_point() + 
+  	scale_colour_gradient(low = "gray90", high = "black") +
+  	stat_smooth(method=lm) +
+  	scale_x_log10() + 
+  	scale_y_log10() + 
+  	theme_classic() +
+  	geom_vline(xintercept = 1000) +
+  	geom_hline(yintercept = 500) +
+  	facet_wrap(~seq_folder)
   
 ```
+![nUMI_nGene_mitoRatio_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/nUMI_nGene_mitoRatio_after.png)
 
 ## 5) Normalization and regressing out unwanted variation
 
