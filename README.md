@@ -684,7 +684,7 @@ PCAPlot(seurat_integrated,
         split.by = "sample")
 dev.off()
 ```
-![plot-PCA](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/mitoExpression_effect.png)
+![plot-PCA](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/PCA_integrated.png)
 
 ```r
 # Run UMAP
@@ -698,6 +698,12 @@ png(filename = "UMAP_integrated.png", width = 16, height = 8.135, units = "in", 
 DimPlot(seurat_integrated, split.by = "sample")
 dev.off()
 ```
+![plot-UMAP](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/UMAP_integrated.png)
+
+For future: considering tumur grade and using Harmony for integration
+
+
+
 
 ### Clustering cells based on top PCs (metagenes)
 
