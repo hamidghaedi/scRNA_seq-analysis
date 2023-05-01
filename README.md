@@ -596,19 +596,19 @@ for (i in 1:length(split_seurat)) {
 # to see what the component of the object are. 
 
 split_seurat    
-$Normal
-An object of class Seurat
-47302 features across 21519 samples within 2 assays
-Active assay: SCT (23608 features, 3000 variable features)
- 1 other assay present: RNA
- 1 dimensional reduction calculated: pca
+#$Normal
+#An object of class Seurat
+#47302 features across 21519 samples within 2 assays
+#Active assay: SCT (23608 features, 3000 variable features)
+# 1 other assay present: RNA
+# 1 dimensional reduction calculated: pca
 
-$BLCA
-An object of class Seurat
-47388 features across 70708 samples within 2 assays
-Active assay: SCT (23694 features, 3000 variable features)
- 1 other assay present: RNA
- 1 dimensional reduction calculated: pca
+#$BLCA
+#An object of class Seurat
+#47388 features across 70708 samples within 2 assays
+#Active assay: SCT (23694 features, 3000 variable features)
+# 1 other assay present: RNA
+# 1 dimensional reduction calculated: pca
 
     
 # Select the most variable features to use for integration
@@ -776,8 +776,30 @@ dev.off()
 # Determine percent of variation associated with each PC
 pct <- seurat_integrated[["pca"]]@stdev / sum(seurat_integrated[["pca"]]@stdev) * 100
 
+#pct
+# [1] 7.9623240 6.3833277 5.7806955 4.4000340 3.9930564 3.6021757 3.5527516
+# [8] 3.0283830 2.9108397 2.6331792 2.4437350 2.3524902 2.2441047 2.1753633
+#[15] 2.0485619 2.0020779 1.9396254 1.8168114 1.7548723 1.6539166 1.6410801
+#[22] 1.5884590 1.5223992 1.4950181 1.4627909 1.3921263 1.3815652 1.3046432
+#[29] 1.2605721 1.2382860 1.2051052 1.1972413 1.1821032 1.1741361 1.1577815
+#[36] 1.1294799 1.1190593 1.0968174 1.0591574 1.0519859 1.0396189 1.0211281
+#[43] 1.0034793 0.9976230 0.9786685 0.9497183 0.9415772 0.9171901 0.9103623
+#[50] 0.9025012
+
+
 # Calculate cumulative percents for each PC
 cumu <- cumsum(pct)
+
+#cumu
+# [1]   7.962324  14.345652  20.126347  24.526381  28.519438  32.121613
+# [7]  35.674365  38.702748  41.613588  44.246767  46.690502  49.042992
+#[13]  51.287097  53.462460  55.511022  57.513100  59.452725  61.269537
+#[19]  63.024409  64.678326  66.319406  67.907865  69.430264  70.925282
+#[25]  72.388073  73.780199  75.161764  76.466408  77.726980  78.965266
+#[31]  80.170371  81.367612  82.549715  83.723852  84.881633  86.011113
+#[37]  87.130172  88.226990  89.286147  90.338133  91.377752  92.398880
+#[43]  93.402359  94.399982  95.378651  96.328369  97.269946  98.187137
+
 
 # Determine which PC exhibits cumulative percent greater than 90% and % variation associated with the PC as less than 5
 co1 <- which(cumu > 90 & pct < 5)[1]
@@ -826,6 +848,8 @@ DimPlot(seurat_integrated,
         label.size = 6)
 dev.off()
 ```
+![plot-umap_label](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster_with_label.png)
+
 
 #### Clustering quality control
 
