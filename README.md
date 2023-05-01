@@ -727,7 +727,40 @@ dev.off()
 print(x = seurat_integrated[["pca"]], 
       dims = 1:10, 
       nfeatures = 5)
-      
+```
+```
+PC_ 1
+Positive:  KRT19, CD52, KRT13, S100P, RPS19
+Negative:  IGFBP7, MGP, SPARC, VIM, SPARCL1
+PC_ 2
+Positive:  PLVAP, PCAT19, CALCRL, MCTP1, AQP1
+Negative:  COL1A2, COL3A1, COL1A1, TAGLN, DCN
+PC_ 3
+Positive:  CCL5, CD52, PTPRC, B2M, SRGN
+Negative:  ADIRF, SPINK1, CSTB, S100P, KRT19
+PC_ 4
+Positive:  HLA-DRA, CD74, TYROBP, HLA-DRB1, HLA-DPB1
+Negative:  CD3D, IL32, CCL5, CRIP1, TRAC
+PC_ 5
+Positive:  LUM, MMP2, PTGDS, RARRES2, DCN
+Negative:  RGS5, NDUFA4L2, ACTA2, PPP1R14A, MYL9
+PC_ 6
+Positive:  SPINK1, CCT2, LCN15, UCA1, PLA2G2A
+Negative:  KRT13, PLAUR, LYPD3, OLFM4, EMP1
+PC_ 7
+Positive:  FABP5, PLA2G2A, LCN15, FABP4, RPS19
+Negative:  CCT2, ADIRF, SPINK1, HSPA1A, CCND1
+PC_ 8
+Positive:  FOS, HSPA1A, JUN, ZFP36, DNAJB1
+Negative:  SPARC, COL4A1, INSR, CCL5, COL4A2
+PC_ 9
+Positive:  LCN15, PLA2G2A, FABP4, CRTAC1, LINC01088
+Negative:  H19, RPS19, CRH, AP005230.1, PSCA
+PC_ 10
+Positive:  HSPA1A, HSPA1B, DNAJB1, HSP90AA1, MALAT1
+Negative:  CRH, CCL5, LY6D, ACKR1, RPS19
+```
+```r
 # To determine how many Pcs should be considered for clustering:
 # Plot the elbow plot
 png(filename = "elbow.png", width = 16, height = 8.135, units = "in", res = 300)
@@ -735,6 +768,10 @@ ElbowPlot(object = seurat_integrated,
           ndims = 40)
 dev.off()
 
+```
+![plot-elbow](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/elbow.png)
+
+```r
 # to make it more quantitative :
 # Determine percent of variation associated with each PC
 pct <- seurat_integrated[["pca"]]@stdev / sum(seurat_integrated[["pca"]]@stdev) * 100
