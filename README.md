@@ -713,13 +713,16 @@ For new method like SCTransform it is not needed to calculate the number of PCs 
 
 ``` r
 # Explore heatmap of PCs
-png(filename = "PCA_integrated_2.png", width = 16, height = 8.135, units = "in", res = 300)
+png(filename = "heatmap_integrated_2.png", width = 16, height = 8.135, units = "in", res = 300)
 DimHeatmap(seurat_integrated, 
            dims = 1:9, 
            cells = 500, 
            balanced = TRUE)
 dev.off()
+```
+![plot-PCA_2](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/heatmap_integrated_2.png)
 
+```r
 # Printing out the most variable genes driving PCs
 print(x = seurat_integrated[["pca"]], 
       dims = 1:10, 
