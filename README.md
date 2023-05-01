@@ -488,8 +488,10 @@ table(seurat_phase$Phase)
 ```
 Cells in different cell cycle stages:
 
-   G1   G2M     S 
-54106 12680 25441 
+| G1    | G2M   | S     |
+|-------|-------|-------|
+| 54106 | 12680 | 25441 |
+
 
 So most of the cells are in G1 and then S, which make sense.
 
@@ -530,45 +532,6 @@ seurat_phase <- ScaleData(seurat_phase)
 # Perform PCA
 seurat_phase <- RunPCA(seurat_phase)
 
-PC_ 1 
-Positive:  IGFBP7, A2M, CALD1, SPARC, MGP, SPARCL1, COL4A2, VIM, RBMS3, NNMT 
-	   TCF4, COL4A1, COL6A2, LHFPL6, IGFBP4, GNG11, FSTL1, SERPING1, GSN, PALM2-AKAP2 
-	   PTPRG, FBXL7, COL6A1, COL1A2, CAV1, ADAMTS9, PMP22, DLC1, LDB2, HTRA1 
-Negative:  KRT7, PSCA, DHRS2, C10orf99, CSTB, KRT17, RPS19, S100A14, AQP3, LYPD3 
-	   GDF15, LIPH, AKR1C2, FABP5, KRT13, TSPAN1, AC019117.2, UPK1B, SPINK1, SCHLAP1 
-	   CRABP2, CXCL17, MACC1, RAB3IP, HPGD, DMKN, UCA1, TMEM97, ADGRF1, FA2H 
-PC_ 2 
-Positive:  PCAT19, PECAM1, PLVAP, CALCRL, ADGRL4, AQP1, EMCN, ECSCR, RAMP2, MCTP1 
-	   VWF, RAMP3, DIPK2B, FLT1, CLDN5, ZNF385D, CD93, PCDH17, SLCO2A1, ERG 
-	   RAPGEF4, EGFL7, CYYR1, ACKR1, FAM167B, RHOJ, LDB2, CLEC14A, DOCK4, RNASE1 
-Negative:  COL1A2, COL1A1, DCN, COL3A1, COL6A3, RARRES2, COL6A1, PCOLCE, FBLN1, LUM 
-	   SERPINF1, C1S, TPM2, COL6A2, C1R, GPC6, SOD3, COL14A1, MFAP4, MEG3 
-	   EMILIN1, MXRA8, PRKG1, CTSK, COL5A2, AEBP1, CRISPLD2, FGF7, ANTXR1, LSAMP 
-PC_ 3 
-Positive:  CD52, TYROBP, CORO1A, ITGB2, FCER1G, RGS1, AIF1, ALOX5AP, HLA-DPB1, IFI30 
-	   CRIP1, GPR183, RGS2, LST1, CCL5, MS4A6A, TRAC, CD69, HLA-DPA1, LYZ 
-	   CCL4, HLA-DQA1, C1QA, IGKC, SPI1, C1QB, HLA-DRB1, S100A4, C1QC, FCGR2A 
-Negative:  KRT7, PSCA, CSTB, C10orf99, DHRS2, AKR1C3, S100A14, TSPAN1, GDF15, SEMA3C 
-	   S100A13, AQP3, AKR1C2, KRT17, FABP5, AKR1C1, SLC14A1, AC019117.2, SCHLAP1, CRABP2 
-	   CD24, SPTSSB, RAI14, TMEM141, CCND1, HMGCS2, CTSE, LIPH, SPINK1, DMKN 
-PC_ 4 
-Positive:  RGS5, FRZB, ACTA2, PPP1R14A, MYH11, COX4I2, NDUFA4L2, MYL9, GJA4, TAGLN 
-	   HEYL, PTP4A3, MUSTN1, CDH6, MCAM, TPPP3, MYLK, PLN, SEPTIN4, WFDC1 
-	   PDGFRB, PRKG1, ADRA2A, MAP1B, MFGE8, CRIP1, HIGD1B, EDNRA, TPM1, CACNA1C 
-Negative:  CFD, IGF1, PTGDS, PID1, SFRP2, TMEM176B, AIF1, CD68, C3, SFRP1 
-	   SOD2, PDPN, VCAN, MS4A6A, PTGS2, LYZ, LUM, BASP1, HLA-DRA, NEGR1 
-	   BNC2, C1QC, IFI30, CD14, LSAMP, C1QA, MMP2, TYROBP, TNFAIP6, TMEM176A 
-PC_ 5 
-Positive:  LCN15, CTSE, CRTAC1, LINC01088, PLA2G2A, CA9, SLC7A11-AS1, SLC8A1-AS1, CST1, TOX3 
-	   SPINK5, FABP4, REG4, ROBO2, GSTM3, SULT1C2, PTPRR, CXCL10, LINC02672, IVL 
-	   PNCK, AC096577.1, APOC1, AC078923.1, TCN1, PLAC8, PPP1R3C, UCA1, SPINK1, ANXA10 
-Negative:  KRT13, OLFM4, MUC4, SGMS2, CPA6, TRIM31, LYPD3, AGR3, SGPP2, TFPI2 
-	   DSG3, SLPI, CXCL17, LIPH, ADGRF1, MACC1, GALNT5, PCDH7, AC022874.1, HBEGF 
-	   ITGA2, LMO7, AREG, PLAT, FGFBP1, ALDH1A3, TM4SF1, AL589693.1, CLDN3, NEBL 
-
-```
-
-```r
 # Plot the PCA colored by cell cycle phase
 no_split <- DimPlot(seurat_phase,
         reduction = "pca",
@@ -606,11 +569,16 @@ Based on the above plots, we can see that cells are scattered regardless of thei
 
 ### SCTransform
 
-This function is useful for automatic normalization and regressing out sources of unwanted variation. This method is more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes. In practice `SCTransform` single command replaces `NormalizeData()`, `ScaleData()`, and `FindVariableFeatures()`. Since we have two group of sample we will run SCTransform on each groups after doing "integration".
+This function is useful for  normalization and regressing out sources of unwanted variation at the same time.The method constructs a generalized linear model (GLM) for each gene, using UMI counts as the response variable and sequencing depth as the explanatory variable. To handle the fact that different genes have different levels of expression, information is pooled across genes with similar abundances, resulting in more accurate parameter estimates.
 
-### Integration
+This regularization process yields residuals, which represent effectively normalized data values that are no longer correlated with sequencing depth.
 
-Integrate or align samples across groups using shared highly variable genes If cells cluster by sample, condition, batch, dataset, or even modality (scRNA, scATAC-seq), this integration step can significantly improve the clustering and the downstream analyses. So we want to integrate normal samples together and BLCA sample together , so downstream analysis would make more sense to do. For integration, we have to keep samples as separate objects and transform them as that is what is required for integration.
+This method is more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes. In practice `SCTransform` single command replaces `NormalizeData()`, `ScaleData()`, and `FindVariableFeatures()`. Since we have two group of sample we will run SCTransform on each groups after doing "integration".
+
+#### Integration
+
+To improve clustering and downstream analyses, it can be beneficial to integrate or align samples across groups using shared highly variable genes. If cells cluster by sample, condition, batch, dataset, or modalities(scRNA, scATAC-seq), integration can help to remove these unwanted sources of variation. For example, if we want to integrate normal samples together and BLCA samples together, we should keep each sample as a separate object and transform them accordingly for integration. This is necessary to ensure that the samples are properly aligned and that downstream analyses are meaningful.
+
 
 ``` r
 # adjust the limit for allowable object sizes within R
