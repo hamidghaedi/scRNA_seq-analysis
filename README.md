@@ -141,7 +141,6 @@ The next steps are mainly based on Harvard Chan Bioinformatics Core materials on
 library(tidyverse)
 library(Seurat)
 library(patchwork)
-library(RCurl)
 library(cowplot)
 
 # create list of samples
@@ -1433,3 +1432,94 @@ dev.off()
 
 ```
 ![umap_with_label_scType.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_with_label_scType.png)
+
+
+# MIBC vs. NMIBC
+
+There are four NMIBC samples(SRR12603790,SRR12603789,SRR12603787,SRR12603786) and four MIBC samples(SRR12603785,SRR12603784,SRR12603783,SRR12603782) in the dataset. Comparing these two group against each other could have give clue on the invasion cell type signature.
+
+```r
+# create list of samples
+samples <- c("SRR12603790","SRR12603789","SRR12603787","SRR12603786","SRR12603785","SRR12603784","SRR12603783","SRR12603782")
+
+# read files inot Seurat objects
+for (file in samples){
+  print(paste0(file))
+  seurat_data <- Read10X(data.dir = paste0("./filtered/", file))
+  seurat_obj <- CreateSeuratObject(counts = seurat_data, 
+                                   min.features = 100, 
+                                   project = file)
+  assign(file, seurat_obj)
+}
+
+# now merging all objects inot one Seurat obj
+
+merged_seurat <- merge(x = SRR12603782, 
+                       y = c(SRR12603783,
+                             SRR12603784,
+                             SRR12603785,
+                             SRR12603786,
+                             SRR12603787,
+                             SRR12603789,
+                             SRR12603790),
+                       add.cell.id = samples)
+```
+Adding more data and annotation to the metadata:
+
+```r
+#Add number of genes per UMI for each cell to metadata
+merged_seurat$log10GenesPerUMI <- log10(merged_seurat$nFeature_RNA) / log10(merged_seurat$nCount_RNA)
+
+# Compute percent mito ratio
+merged_seurat$mitoRatio <- PercentageFeatureSet(object = merged_seurat, pattern = "^MT-")
+merged_seurat$mitoRatio <- merged_seurat@meta.data$mitoRatio / 100
+
+# Create metadata dataframe
+metadata <- merged_seurat@meta.data
+# Add cell IDs to metadata
+metadata$cells <- rownames(metadata)
+# adding sample type to metadata. The orginal file could be download from SRA explorer
+sampleInformation <- read.csv("sampleInfo.csv")
+metadata <- left_join(metadata, sampleInformation, by = "orig.ident")
+
+# Rename columns
+metadata <- metadata %>%
+  dplyr::rename(seq_folder = orig.ident,
+                nUMI = nCount_RNA,
+                nGene = nFeature_RNA,
+                sample = Invasiveness)
+
+# Add metadata back to Seurat object
+merged_seurat@meta.data <- metadata
+```
+Filtering based on what we concluded from the main dataset:
+```r
+# Filter out low quality cells using selected thresholds - these will change with experiment
+filtered_seurat <- subset(merged_seurat, 
+                          subset= nCount_RNA >= 1000 & 
+                          nFeature_RNA >= 500 & 
+                          log10GenesPerUMI > 0.80 & 
+                          mitoRatio < 0.20)
+```
+```r
+# load object
+load("seurat_filtered.RData")
+
+
+sample_to_keep <-c("SRR12603790","SRR12603789","SRR12603787","SRR12603786","SRR12603785","SRR12603784","SRR12603783","SRR12603782")
+samples_to_remove <- c("SRR12603788", "SRR12603780")
+
+
+sampleInformation <- read.csv("sampleInfo.csv")
+metadata <- filtered_seurat@meta.data
+metadata <- left_join(metadata, sampleInformation, by = "orig.ident")
+
+# replacing metadata
+filtered_seurat@meta.data <- metadata
+
+# Subset merged_seurat object to keep only cells from other samples
+inv_seurat <- subset(filtered_seurat,
+                      subset = orig.ident %in% sample_to_keep)
+
+
+
