@@ -1586,7 +1586,7 @@ PCAPlot(seurat_integrated,
         split.by = "Invasiveness")
 dev.off()
 ```
-[blca_PCA_integrated.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_PCA_integrated.png)
+![blca_PCA_integrated.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_PCA_integrated.png)
 
 ```r
 
@@ -1601,7 +1601,7 @@ png(filename = "blca_UMAP_integrated.png", width = 16, height = 8.135, units = "
 DimPlot(seurat_integrated, split.by = "Invasiveness")
 dev.off()
 ```
-[blca_UMAP_integrated.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_UMAP_integrated.png)
+![blca_UMAP_integrated.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_UMAP_integrated.png)
 
 ```r
 # Cluster the cells
@@ -1633,7 +1633,7 @@ DimPlot(seurat_integrated,
         label.size = 6)
 dev.off()
 ```
-[blca_umap_cluster_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_cluster_with_label.png)
+![blca_umap_cluster_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_cluster_with_label.png)
 ```r
 # UMAP of cells in each cluster by invasiveness group
 # This would allow us to see condition specefic clusters
@@ -1643,7 +1643,7 @@ DimPlot(seurat_integrated,
         split.by = "Invasiveness")  + NoLegend()
 dev.off()
 ```
-[blca_umap_cluster_sample.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_cluster_sample.png)
+![blca_umap_cluster_sample.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_cluster_sample.png)
 
 ```r
 # Explore whether clusters segregate by cell cycle phase
@@ -1654,7 +1654,7 @@ DimPlot(seurat_integrated,
         split.by = "Grade")  + NoLegend()
 dev.off()
 ```
-[grade_umap_cluster_cell_cucle.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/grade_umap_cluster_cell_cucle.png)
+![grade_umap_cluster_cell_cucle.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/grade_umap_cluster_cell_cucle.png)
 
 ```r
 #Marker identification
@@ -1753,7 +1753,7 @@ FeaturePlot(object = seurat_integrated,
 
 dev.off()
 ```
-[cd24_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cd24_cells.png)
+![cd24_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cd24_cells.png)
 
 ```
 png(filename = "lyz_cells.png", width = 16, height = 8.135, units = "in", res = 300)
@@ -1766,7 +1766,7 @@ FeaturePlot(object = seurat_integrated,
 
 dev.off()
 ```
-[lyz_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/lyz_cells.png)
+![lyz_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/lyz_cells.png)
 
 ```
 # Rename all identities
@@ -1803,4 +1803,4 @@ DimPlot(object = seurat_integrated,
         split.by = "Invasiveness")
 dev.off()
 ```
-[blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
+![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
