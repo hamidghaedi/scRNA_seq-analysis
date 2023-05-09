@@ -362,10 +362,11 @@ To investigate the potential cause of high mitochondrial expression ratios, it i
 ``` r
 # Filter out low quality cells using selected thresholds - these will change with experiment
 filtered_seurat <- subset(merged_seurat, 
-                          subset= nUMI >= 1000 & 
-                          nGene >= 500 & 
+                          subset= nUMI >= 1000 &
+                          nGene >= 500 &
+                          nGene <= 6000 & 
                           log10GenesPerUMI > 0.80 & 
-                          mitoRatio < 0.20)
+                          mitoRatio < 0.10)
 ```
 
 #### Gene-level filtering
@@ -1042,18 +1043,34 @@ dev.off()
 
 This can be the last step in our pipeline which aims to determine the gene markers for each of the clusters and identify cell types of each cluster using markers. Also this step helps to determine whether there's a need to re-cluster based on cell type markers, or maybe clusters need to be merged or split.
 
--   Identification of all markers for each cluster
+For marker identification there are three functions in the seurat package, each with different application: 
+
+`FindAllMarkers()`: It should only be used when comparing a cluster against other clusters belong to the same group. i.e. this function should be used only when we have one group/condition.
+
+`FindConservedMarkers()`:When we have two groups like tumor vs normal or invasive vs. non invasive identifying conserved markers is the best approach. In this way, we find DE genes for a given cluster in once condition (e.g. invasive) comparing the cluster against the rest of cluster in the same condition group. We do the same for that given cluster in the other condition (non-invasive). Finally the two list will be mergerd to give us the conserved marker for a given cluster. 
+
+`FindMarkers()`: This is helpful with identifying gene markers for each cluster. In practice sometimes the list of markers returned don’t sufficiently separate some of the clusters. We can use this function to further diffrentiate between those clusters.  
+
 
 ``` r
+#______________________________ NOT TO BE RUN________________________________
 # Find markers for every cluster compared to all remaining cells, report only the positive ones
 markers <- FindAllMarkers(object = seurat_integrated, 
                           only.pos = TRUE,
                           logfc.threshold = 0.25)     
+
+```
+
+When we have two groups like tumor vs normal or invasive vs. non invasive identifying conserved markers is the best approach. In this way, we find DE genes for a given cluster in once condition (e.g. invasive) comparing the cluster against the rest of cluster in the same condition group. We do the same for that given cluster in the other condition (non-invasive). Finally the two list will be mergerd to give us the conserved marker for a given cluster. 
+
+```r
+# explecity set the defult object to normalized values
 DefaultAssay(seurat_integrated) <- "RNA"
+
 
 cluster0_conserved_markers <- FindConservedMarkers(seurat_integrated,
                               ident.1 = 0,
-                              grouping.var = "sample",
+                              grouping.var = "Invasiveness",
                                 only.pos = TRUE,
                              logfc.threshold = 0.60)
 ```
@@ -1092,31 +1109,41 @@ To find conserved markers for all clusters:
 ``` r
 # Create function to get conserved markers for any given cluster
 get_conserved <- function(cluster){
-  FindConservedMarkers(seurat_integrated,
-                       ident.1 = cluster,
-                       grouping.var = "sample",
-                       only.pos = TRUE) %>%
-    rownames_to_column(var = "gene") %>%
-    left_join(y = unique(annotations[, c("gene_name", "description")]),
-               by = c("gene" = "gene_name")) %>%
-    cbind(cluster_id = cluster, .)
-  }
-  
+  tryCatch({
+    FindConservedMarkers(seurat_integrated,
+                         ident.1 = cluster,
+                         grouping.var = "Invasiveness",
+                         only.pos = TRUE,
+                         logfc.threshold = 0.60) %>%
+      rownames_to_column(var = "gene") %>%
+      left_join(y = unique(annotations[, c("gene_name", "description")]),
+                 by = c("gene" = "gene_name")) %>%
+      cbind(cluster_id = cluster, .)
+    },
+    error = function(e) {
+      message(paste0("Error: ", e$message))
+      return(NULL)
+    }
+  )
+}
 # this function can be an argument for 'map_dfr' function :
 # Iterate function across desired clusters
-conserved_markers <- map_dfr(c(0:21), get_conserved)
+conserved_markers <- map_dfr(c(0:20), get_conserved)
 
 # Extract top 10 markers per cluster
 top10 <- conserved_markers %>% 
-  mutate(avg_fc = (Normal_avg_log2FC + BLCA_avg_log2FC) /2) %>% 
+  mutate(avg_fc = (Noninvasive_avg_log2FC + Invasive_avg_log2FC) /2) %>% 
   group_by(cluster_id) %>% 
   top_n(n = 10, 
         wt = avg_fc)
         
 head(top10)
 
-data.table::fwrite(top10, "top10_conserved_markers.csv")
+data.table::fwrite(top10, "blca_top10_conserved_markers.csv")
 ```
+
+
+
 
 There are a number of tools that one may use to assign cell type to a cluster. However almost non of them at the time of writing can help with bladder tissue. So I have to looked up for genes in the [PanglaoDB](https://panglaodb.se/index.html) database manually and assign cell type to each cluster. So to do this job in a more efficient way, lets first identify which markers are associated to more clusters, then assign cell type to those clusters.
 
@@ -1438,88 +1465,342 @@ dev.off()
 
 There are four NMIBC samples(SRR12603790,SRR12603789,SRR12603787,SRR12603786) and four MIBC samples(SRR12603785,SRR12603784,SRR12603783,SRR12603782) in the dataset. Comparing these two group against each other could have give clue on the invasion cell type signature.
 
-```r
-# create list of samples
-samples <- c("SRR12603790","SRR12603789","SRR12603787","SRR12603786","SRR12603785","SRR12603784","SRR12603783","SRR12603782")
 
-# read files inot Seurat objects
-for (file in samples){
-  print(paste0(file))
-  seurat_data <- Read10X(data.dir = paste0("./filtered/", file))
-  seurat_obj <- CreateSeuratObject(counts = seurat_data, 
-                                   min.features = 100, 
-                                   project = file)
-  assign(file, seurat_obj)
-}
-
-# now merging all objects inot one Seurat obj
-
-merged_seurat <- merge(x = SRR12603782, 
-                       y = c(SRR12603783,
-                             SRR12603784,
-                             SRR12603785,
-                             SRR12603786,
-                             SRR12603787,
-                             SRR12603789,
-                             SRR12603790),
-                       add.cell.id = samples)
-```
-Adding more data and annotation to the metadata:
-
-```r
-#Add number of genes per UMI for each cell to metadata
-merged_seurat$log10GenesPerUMI <- log10(merged_seurat$nFeature_RNA) / log10(merged_seurat$nCount_RNA)
-
-# Compute percent mito ratio
-merged_seurat$mitoRatio <- PercentageFeatureSet(object = merged_seurat, pattern = "^MT-")
-merged_seurat$mitoRatio <- merged_seurat@meta.data$mitoRatio / 100
-
-# Create metadata dataframe
-metadata <- merged_seurat@meta.data
-# Add cell IDs to metadata
-metadata$cells <- rownames(metadata)
-# adding sample type to metadata. The orginal file could be download from SRA explorer
-sampleInformation <- read.csv("sampleInfo.csv")
-metadata <- left_join(metadata, sampleInformation, by = "orig.ident")
-
-# Rename columns
-metadata <- metadata %>%
-  dplyr::rename(seq_folder = orig.ident,
-                nUMI = nCount_RNA,
-                nGene = nFeature_RNA,
-                sample = Invasiveness)
-
-# Add metadata back to Seurat object
-merged_seurat@meta.data <- metadata
-```
-Filtering based on what we concluded from the main dataset:
-```r
-# Filter out low quality cells using selected thresholds - these will change with experiment
-filtered_seurat <- subset(merged_seurat, 
-                          subset= nCount_RNA >= 1000 & 
-                          nFeature_RNA >= 500 & 
-                          log10GenesPerUMI > 0.80 & 
-                          mitoRatio < 0.20)
-```
 ```r
 # load object
-load("seurat_filtered.RData")
+load("~/scRNA/seurat_filtered.RData")
 
 
-sample_to_keep <-c("SRR12603790","SRR12603789","SRR12603787","SRR12603786","SRR12603785","SRR12603784","SRR12603783","SRR12603782")
-samples_to_remove <- c("SRR12603788", "SRR12603780")
+# reading sample information
+sampleInformation <- read.csv("~/scRNA/sampleInfo.csv")
+
+filtered_seurat@meta.data <- left_join(filtered_seurat@meta.data, sampleInformation, by = "orig.ident")
+# save meta data as a df
+metaData <- filtered_seurat@meta.data
 
 
-sampleInformation <- read.csv("sampleInfo.csv")
-metadata <- filtered_seurat@meta.data
-metadata <- left_join(metadata, sampleInformation, by = "orig.ident")
+# setting ident
+Idents(filtered_seurat) <- "sample"
 
-# replacing metadata
-filtered_seurat@meta.data <- metadata
+# keeping only cancer samples
+blca_seurat <- subset(filtered_seurat, idents = "BLCA")
+rm(filtered_seurat)
 
-# Subset merged_seurat object to keep only cells from other samples
-inv_seurat <- subset(filtered_seurat,
-                      subset = orig.ident %in% sample_to_keep)
+# Repair the meta.data
+blca_seurat@meta.data$cells <- blca_seurat@assays$RNA@data@Dimnames[[2]]
+blca_seurat@meta.data$orig.ident <- substr(blca_seurat@assays$RNA@data@Dimnames[[2]],1,11)
+blca_seurat@meta.data$seq_folder <- substr(blca_seurat@assays$RNA@data@Dimnames[[2]],1,11)
+blca_seurat@meta.data$sample <- "BLCA"
+
+# set rownames
+rownames(blca_seurat@meta.data) <- blca_seurat@meta.data$cells
 
 
+# remove columns fillied by NA
+col_remove <- c("nUMI", "nGene", "log10GenesPerUMI", "gender", "age", "Grade", "Invasiveness", "Surgery_Type", "Tumor_size_cm", "mitoRatio")
 
+# 
+blca_seurat@meta.data <- blca_seurat@meta.data[, !(colnames(blca_seurat@meta.data) %in% col_remove)]
+
+# adding more meta.data again
+blca_seurat@meta.data <- left_join(blca_seurat@meta.data, sampleInformation, by = "orig.ident")
+
+
+# Setting metadata rownames as the column names of expression matrix
+rownames(blca_seurat@meta.data) <- blca_seurat@meta.data$cells
+
+# SCTransform
+
+# Split seurat object by group
+
+# setting ident
+Idents(blca_seurat) <- "Invasiveness"
+blca_split <- SplitObject(blca_seurat)
+
+
+blca_split 
+#$Invasive
+#An object of class Seurat 
+#29686 features across 41242 samples within 1 assay 
+#Active assay: RNA (29686 features, 0 variable features)
+#
+#$Noninvasive
+#An object of class Seurat 
+#29686 features across 35891 samples within 1 assay 
+#Active assay: RNA (29686 features, 0 variable features)
+
+
+# Repairing meta.data for each object in the splitted obj:
+
+for(i in 1:length(blca_split)){
+     print(blca_split[[i]])
+     obj = blca_split[[i]]
+     obj@meta.data$cells <- obj@assays$RNA@data@Dimnames[[2]]
+     obj@meta.data <- obj@meta.data[, c(2,3,5)]
+     obj@meta.data$orig.ident <- substr(obj@assays$RNA@data@Dimnames[[2]],1,11)
+     obj@meta.data$seq_folder <- substr(obj@assays$RNA@data@Dimnames[[2]],1,11)
+     obj@meta.data <- left_join(obj@meta.data, sampleInformation, by = "orig.ident")
+     obj@meta.data <- left_join(obj@meta.data, metaData[,c(8,9)], by = "cells")
+     # repairng metadata rownames
+     if(all(obj@meta.data$cells == colnames(obj@assays$RNA@counts))){
+     rownames(obj@meta.data) <- obj@meta.data$cells
+     }
+     blca_split[[i]] = obj
+ }
+
+#saveRDS(blca_split, "blca_split.rds")
+# then normalize by SCTansform
+# orig.ident is slected ti be regressed out because each sample was sequenced in seperate batch
+
+for (i in 1:length(blca_split)) {
+    blca_split[[i]] <- SCTransform(blca_split[[i]], vars.to.regress = c("orig.ident"), vst.flavor = "v2")
+    }
+
+# Integration : integrating samples belong to one group
+
+# Select the most variable features to use for integration
+integ_features <- SelectIntegrationFeatures(object.list = blca_split, 
+                                            nfeatures = 3000) 
+
+
+# Prepare the SCT list object for integration
+split_seurat <- PrepSCTIntegration(object.list = blca_split, 
+                                   anchor.features = integ_features)
+                                   
+# Find best buddies (using canonical correlation analysis or CCA) - can take a while to run
+integ_anchors <- FindIntegrationAnchors(object.list = split_seurat, 
+                                        normalization.method = "SCT", 
+                                        anchor.features = integ_features)
+# Integrate across conditions
+seurat_integrated <- IntegrateData(anchorset = integ_anchors, 
+                                   normalization.method = "SCT")
+                                   
+
+# Integration check
+# Run PCA
+seurat_integrated <- RunPCA(object = seurat_integrated, verbose = TRUE)
+
+# Plot PCA
+png(filename = "blca_PCA_integrated.png", width = 16, height = 8.135, units = "in", res = 300)
+PCAPlot(seurat_integrated,
+        split.by = "Invasiveness")
+dev.off()
+```
+[blca_PCA_integrated.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_PCA_integrated.png)
+
+```r
+
+# Run UMAP
+seurat_integrated <- RunUMAP(seurat_integrated, 
+                             dims = 1:40,
+                             reduction = "pca",
+                             verbose = TRUE)
+
+# Plot UMAP 
+png(filename = "blca_UMAP_integrated.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(seurat_integrated, split.by = "Invasiveness")
+dev.off()
+```
+[blca_UMAP_integrated.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_UMAP_integrated.png)
+
+```r
+# Cluster the cells
+
+# to check what is active assay
+DefaultAssay(object = seurat_integrated)
+
+# Determine the K-nearest neighbor graph
+seurat_integrated <- FindNeighbors(object = seurat_integrated, 
+                                dims = 1:18)
+                                
+#Find clusters
+# Determine the clusters for various resolutions                                
+seurat_integrated <- FindClusters(object = seurat_integrated,
+                               resolution = c(0.2,0.4, 0.6, 0.8, 1.0, 1.4))
+                               
+
+# Explore resolutions
+head(seurat_integrated@meta.data)
+
+# Assign identity of clusters
+Idents(object = seurat_integrated) <- "integrated_snn_res.0.2"
+
+# Plot the UMAP
+png(filename = "blca_umap_cluster_with_label.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(seurat_integrated,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
+```
+[blca_umap_cluster_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_cluster_with_label.png)
+```r
+# UMAP of cells in each cluster by invasiveness group
+# This would allow us to see condition specefic clusters
+png(filename = "blca_umap_cluster_sample.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(seurat_integrated, 
+        label = TRUE, 
+        split.by = "Invasiveness")  + NoLegend()
+dev.off()
+```
+[blca_umap_cluster_sample.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_cluster_sample.png)
+
+```r
+# Explore whether clusters segregate by cell cycle phase
+
+png(filename = "grade_umap_cluster_cell_cucle.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(seurat_integrated,
+        label = TRUE, 
+        split.by = "Grade")  + NoLegend()
+dev.off()
+```
+[grade_umap_cluster_cell_cucle.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/grade_umap_cluster_cell_cucle.png)
+
+```r
+#Marker identification
+                  
+
+# adding annotation to the genes:
+# Connect to AnnotationHub
+ah <- AnnotationHub()
+
+# Access the Ensembl database for organism
+ahDb <- query(ah, 
+              pattern = c("Homo sapiens", "EnsDb"), 
+              ignore.case = TRUE)
+
+# Acquire the latest annotation files
+id <- ahDb %>%
+        mcols() %>%
+        rownames() %>%
+        tail(n = 1)
+
+# Download the appropriate Ensembldb database
+edb <- ah[[id]]
+
+# Extract gene-level information from database
+annotations <- genes(edb, 
+                     return.type = "data.frame")
+
+# Select annotations of interest
+annotations <- annotations %>%
+        dplyr::select(gene_id, gene_name, seq_name, gene_biotype, description)
+        
+```
+Finding markers for all clusters:
+
+```r
+# Create function to get conserved markers for any given cluster
+get_conserved <- function(cluster){
+  FindConservedMarkers(seurat_integrated,
+                       ident.1 = cluster,
+                       grouping.var = "Invasiveness",
+                       only.pos = TRUE,
+                       logfc.threshold = 0.60) %>%
+    rownames_to_column(var = "gene") %>%
+    left_join(y = unique(annotations[, c("gene_name", "description")]),
+               by = c("gene" = "gene_name")) %>%
+    cbind(cluster_id = cluster, .)
+  }
+  
+# this function can be an argument for 'map_dfr' function :
+# Iterate function across desired clusters
+conserved_markers <- map_dfr(c(0:20), get_conserved)
+
+# Extract top 10 markers per cluster
+top10 <- conserved_markers %>% 
+  mutate(avg_fc = (Normal_avg_log2FC + BLCA_avg_log2FC) /2) %>% 
+  group_by(cluster_id) %>% 
+  top_n(n = 10, 
+        wt = avg_fc)
+        
+head(top10)
+
+#data.table::fwrite(top10, "top10_conserved_markers.csv")
+#group based on the clsuter id to define cell types:
+data_grouped <- top10 %>%
+  group_by(cluster_id) %>%
+  summarize(gene = paste(gene, collapse = ","))
+
+```
+
+| cluster_id| genes                                     | cell_type (PanglaoDB + ChatGPT)     |
+|-----------|----------------------------------------------------------|-------|
+| 0         | SFN,S100A2,CXCL8,CLDN4,AQP3,PHLDA2,EMP1,KRT13,KRT17,SLPI | basal cells |
+| 1 |SPINK1,CD24,UBE2C,UCA1,ADIRF,C15orf48,CSTB,S100A9,CCND1,HIST1H4C | CCND1 + cells|
+| 2 |CD52,CXCR4,CD3D,CD69,IFNG,TRAC,IL32,CCL5,CCL4,NKG7 |T cells/NK cells |
+| 3 |PSCA,LY6D,KRT7,DHRS2,KRT13,HES1,KRT20,CRH,GCLC,RPS19|basal/squamous-like cells|
+| 4 |HSPG2,LDB2,IGFBP7,SPARCL1,GNG11,VWF,FLT1,RAMP2,INSR,PLVAP| ND|
+| 5 |CD52,CD2,LINC01871,GZMA,TRBC2,CD3D,TRAC,CORO1A,CCL5,NKG7|cytotoxic T cell|
+| 6 |FABP4,CTSE,AKR1C3,PLA2G2A,FABP5,CRTAC1,GSTM3,KRT7,S100A6,CLU|CAFs|
+| 7 |SNTG1,ZFPM2-AS1,RHEX,MT-ATP6,MT-ND5,CCSER1,FRY,SPINK1|ND|
+| 8 |RGS5,RGS5,IGFBP7,CALD1,ACTA2,TAGLN,THY1,NDUFA4L2,MYL9,BGN|fibroblasts/myofibroblasts|
+| 10 |C1QA,C1QB,CD74,HLA-DRA,HLA-DRB1,HLA-DPA1,HLA-DPB1,LYZ,TYROBP,APOE| APCs|
+| 11 |COL3A1,CXCL14,COL1A2,RARRES2,PTGDS,MGP,LUM,DCN,MT2A,COL1A1|Fbroblasts(?)|
+| 13 |CPA3,HPGDS,LTC4S,MS4A2,CTSG,TPSB2,TPSAB1,CD69,SRGN,RGS1| Mast cells|
+| 14 |AFF3,BANK1,LTB,HLA-DRA,CD79A,CD37,CD74,CD52,CXCR4,CD83| B cells  |
+| 17 |JCHAIN,IGHG1,IGHG2,IGKC,IGHG3,IGLC3,IGLC2,IGHA1,IGHM,IGHA2| B cells |
+
+```r 
+# Plot interesting marker gene expression 
+png(filename = "cd24_cells.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = seurat_integrated,
+            features = c('SPINK1','CD24','UBE2C','UCA1','ADIRF','C15orf48','CSTB','S100A9','CCND1','HIST1H4C'),
+            order = TRUE,
+            min.cutoff = "q10",
+            label = TRUE,
+            repel = TRUE)
+
+dev.off()
+```
+[cd24_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cd24_cells.png)
+
+```
+png(filename = "lyz_cells.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = seurat_integrated,
+            features = c('C1QA','C1QB','CD74','HLA-DRA','HLA-DRB1','HLA-DPA1','HLA-DPB1','LYZ','TYROBP','APOE'),
+            order = TRUE,
+            min.cutoff = "q10",
+            label = TRUE,
+            repel = TRUE)
+
+dev.off()
+```
+[lyz_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/lyz_cells.png)
+
+```
+# Rename all identities
+seurat_integrated <- RenameIdents(object = seurat_integrated, 
+                               "0" = "Basal cells",
+                               "1" = "CCND1 + cells", # NKG7 and GZMK
+                               "2" = "T cells/NK cells",
+                               "3" = "basal/squamous-like cells",
+                               "4" = "ND",
+                               "5" = "cytotoxic T cell",
+                               "6" = "CAFs",
+                               "7" = "ND",
+                               "8" = "fibroblasts/myofibroblasts",
+                               "9" = "ND",
+                               "10" = "fibroblasts/myofibroblasts",
+                               "11" = "Fibroblast(?)",
+                               "12" = "ND",
+                               "13" = "Mast cells",
+                               "14" = "B cells",
+                               "15" = "ND",
+                               "16" = "ND",
+                               "17" = "B cells", 
+                               "18" = "ND", 
+                               "19" = "ND",
+                               "20" = "ND")
+
+# Plot the UMAP withy new labells
+png(filename = "blca_umap_with_label.png", width = 16, height = 8.135, units = "in", res = 600)
+DimPlot(object = seurat_integrated, 
+        reduction = "umap", 
+        label = TRUE,
+        label.size = 3,
+        repel = TRUE,
+        split.by = "Invasiveness")
+dev.off()
+```
+[blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
