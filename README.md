@@ -1692,6 +1692,7 @@ Finding markers for all clusters:
 ```r
 # Create function to get conserved markers for any given cluster
 get_conserved <- function(cluster){
+  tryCatch({
   FindConservedMarkers(seurat_integrated,
                        ident.1 = cluster,
                        grouping.var = "Invasiveness",
@@ -1701,6 +1702,11 @@ get_conserved <- function(cluster){
     left_join(y = unique(annotations[, c("gene_name", "description")]),
                by = c("gene" = "gene_name")) %>%
     cbind(cluster_id = cluster, .)
+  },
+  error = function(e){
+  message(paste0("Error: ", e$message))
+    }
+   )
   }
   
 # this function can be an argument for 'map_dfr' function :
@@ -1804,3 +1810,11 @@ DimPlot(object = seurat_integrated,
 dev.off()
 ```
 ![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
+
+
+# Ananlysis based on the orginal paper
+
+"Cells with UMI numbers <1000 or with over 10% mitochondrial-derived UMI counts were considered low-quality cells and were removed. In order to eliminate potential doublets, single cells with over 6000 genes detected were also filtered out. Finally, 52721 single cells remained, and they were applied in downstream analyses."
+
+"Since sample from eight patients were processed and sequenced in batches, patient number was used to remove potential batch effect."
+
