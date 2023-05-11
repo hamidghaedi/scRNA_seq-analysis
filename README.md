@@ -1939,7 +1939,7 @@ FeaturePlot(object = harmonized_seurat,
 
 dev.off()
 ```
-![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
+![tsne_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/tsne_superCluster_cells.png)
 
 ```r
 # umap
@@ -1956,7 +1956,7 @@ dev.off()
 
 #
 ```
-![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
+![umap_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_superCluster_cells.png)
 
 ```
 
