@@ -1761,7 +1761,7 @@ dev.off()
 ```
 ![cd24_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cd24_cells.png)
 
-```
+```r
 png(filename = "lyz_cells.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(object = seurat_integrated,
             features = c('C1QA','C1QB','CD74','HLA-DRA','HLA-DRB1','HLA-DPA1','HLA-DPB1','LYZ','TYROBP','APOE'),
@@ -1774,7 +1774,7 @@ dev.off()
 ```
 ![lyz_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/lyz_cells.png)
 
-```
+```r
 # Rename all identities
 seurat_integrated <- RenameIdents(object = seurat_integrated, 
                                "0" = "Basal cells",
@@ -1817,4 +1817,172 @@ dev.off()
 "Cells with UMI numbers <1000 or with over 10% mitochondrial-derived UMI counts were considered low-quality cells and were removed. In order to eliminate potential doublets, single cells with over 6000 genes detected were also filtered out. Finally, 52721 single cells remained, and they were applied in downstream analyses."
 
 "Since sample from eight patients were processed and sequenced in batches, patient number was used to remove potential batch effect."
+
+"epithelial (EPCAM+) cells; endothelial (CD31+) cells; two types of fibroblasts (COL1A1+)—iCAFs (PDGFRA+) and myo-CAFs (mCAFs) (RGS5+); B cells (CD79A+); myeloid cells (LYZ+); T cells (CD3D+); and mast cells (TPSAB1+)"
+
+```r
+#________________________Reading the files______________________#
+# create list of samples
+samples <- list.files("./filtered/")
+#samples <- samples[grepl('^filtered',samples,perl=T)]
+
+# read files inot Seurat objects
+for (file in samples){
+  print(paste0(file))
+  seurat_data <- Read10X(data.dir = paste0("./filtered/", file))
+  seurat_obj <- CreateSeuratObject(counts = seurat_data, 
+                                   min.features = 100, 
+                                   project = file)
+  assign(file, seurat_obj)
+}
+
+# now merging all objects inot one Seurat obj
+
+merged_seurat <- merge(x = SRR12603780, 
+                       y = c(SRR12603781,
+                             SRR12603782,
+                             SRR12603783,
+                             SRR12603784,
+                             SRR12603785,
+                             SRR12603786,
+                             SRR12603787,
+                             SRR12603788,
+                             SRR12603789,
+                             SRR12603790),
+                       add.cell.id = samples)
+#________________________Filteration____________________________#
+# reading sampleInformation:
+sampleInformation <- read.csv("./sampleInfo.csv")
+
+# Compute percent mito ratio
+merged_seurat$mitoRatio <- PercentageFeatureSet(object = merged_seurat, pattern = "^MT-")
+merged_seurat$mitoRatio <- merged_seurat@meta.data$mitoRatio / 100
+
+# adding cell column
+merged_seurat$cells <- rownames(merged_seurat@meta.data)
+# merging with sample information
+merged_seurat@meta.data <- merge(merged_seurat@meta.data, sampleInformation)
+# re-setting the rownames
+rownames(merged_seurat@meta.data) <- merged_seurat@meta.data$cells
+
+
+# Filteration
+
+filtered_seurat <- subset(merged_seurat, 
+                          subset= nCount_RNA >= 1000 &
+                          nFeature_RNA <= 6000 & 
+                          mitoRatio < 0.10)
+
+#________________________Integration using Harmony____________________________#
+#integration using harmony need sevral steps to be undertaken:
+
+# Perform log-normalization and feature selection, as well as SCT normalization on global object
+merged_seurat <- filtered_seurat %>%
+    NormalizeData() %>%
+    FindVariableFeatures(selection.method = "vst", nfeatures = 3000) %>% 
+    ScaleData() %>%
+    SCTransform(vars.to.regress = c("mitoRatio", "orig.ident"))
+
+# Calculate PCs using variable features determined by SCTransform (3000 by default)
+merged_seurat <- RunPCA(merged_seurat, assay = "SCT", npcs = 50)
+merged_seurat <- RunTSNE(merged_seurat, assay = "SCT", npcs = 50)
+
+# Integration
+#install.packages("harmony")
+
+library(harmony)
+
+harmonized_seurat <- RunHarmony(merged_seurat, 
+				group.by.vars = c("orig.ident", "gender", "Surgery_Type"), 
+				reduction = "pca", assay.use = "SCT", reduction.save = "harmony")
+```
+The code above incorporates an additional reduction of 50 "harmony components" (i.e., corrected principal components) to our Seurat object, which is stored in the harmonized_seurat@reductions$harmony variable.
+
+However, to ensure that the Harmony integration is accurately represented in the data visualization, we must generate a UMAP that is derived from these harmony embeddings instead of the PCs.
+
+```r
+harmonized_seurat <- RunUMAP(harmonized_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
+harmonized_seurat <- RunUTSNE(harmonized_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
+
+
+#________________________SuperCluster Identification____________#
+
+# to set reduction to harmony and finding the clusters
+harmonized_seurat <- FindNeighbors(object = harmonized_seurat, reduction = "harmony")
+harmonized_seurat <- FindClusters(harmonized_seurat, resolution = c(0.1, 0.2, 0.4, 0.6, 0.8))
+
+# visualization
+Idents(harmonized_seurat) <- harmonized_seurat@meta.data$SCT_snn_res.0.1
+png(filename = "harmony_umap_cluster_with_label.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(harmonized_seurat,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
+```
+![harmony_umap_cluster_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_umap_cluster_with_label.png)
+
+
+```r
+# lets visualize cells expressing supercluster markers:
+# CD31: PECAM1
+markers <- c("EPCAM", "PECAM1", "COL1A1", "PDGFRA", "RGS5", "CD79A", "LYZ", "CD3D", "TPSAB1")
+
+png(filename = "tsne_superCluster_cells.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = harmonized_seurat,
+            features = markers,
+            order = TRUE,
+            min.cutoff = "q10",
+            reduction = "tsne",
+            label = TRUE,
+            repel = TRUE)
+
+dev.off()
+```
+![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
+
+```r
+# umap
+png(filename = "umap_superCluster_cells.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = harmonized_seurat,
+            features = markers,
+            order = TRUE,
+            min.cutoff = "q10",
+            reduction = "umap",
+            label = TRUE,
+            repel = TRUE)
+
+dev.off()
+
+#
+```
+![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
+
+```
+
+# Adding a column to the meta.data
+
+markers <- c("EPCAM", "PECAM1", "COL1A1", "PDGFRA", "RGS5", "CD79A", "LYZ", "CD3D", "TPSAB1")
+normalized_data <- harmonized_seurat@assays$RNA@data
+normalized_data <- normalized_data[rownames(normalized_data) %in% markers,]
+normalized_data <- t(as.matrix(normalized_data))
+
+# Custom function to calculate superCluster value for each row
+getSuperCluster <- function(row) {
+  # Get column names where value > 0
+  cols <- names(row[row > 0])
+  if (length(cols) == 0) {
+    # If no columns have value > 0, return "None"
+    return("None")
+  } else if (length(cols) == 1) {
+    # If only one column has value > 0, return column name
+    return(cols)
+  } else {
+    # If multiple columns have value > 0, collapse column names with "/"
+    return(paste(cols, collapse = "/"))
+  }
+}
+
+# Apply custom function to each row and add result as new column
+superCluster <- apply(normalized_data, 1, getSuperCluster)
 
