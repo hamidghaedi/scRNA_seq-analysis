@@ -1812,7 +1812,9 @@ dev.off()
 ![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
 
 
-# Ananlysis based on the orginal paper
+# Ananlysis considering cell super clusters
+
+This section is based on what I can get from the paper, but I stay focused on cancer samples and will use harmony to do integration. Finally , I do trajectory analysis for all cells which identified as epithelial cells.
 
 "Cells with UMI numbers <1000 or with over 10% mitochondrial-derived UMI counts were considered low-quality cells and were removed. In order to eliminate potential doublets, single cells with over 6000 genes detected were also filtered out. Finally, 52721 single cells remained, and they were applied in downstream analyses."
 
@@ -1897,7 +1899,7 @@ harmonized_seurat <- RunHarmony(merged_seurat,
 				group.by.vars = c("orig.ident", "gender", "Surgery_Type"), 
 				reduction = "pca", assay.use = "SCT", reduction.save = "harmony")
 ```
-The code above incorporates an additional reduction of 50 "harmony components" (i.e., corrected principal components) to our Seurat object, which is stored in the harmonized_seurat@reductions$harmony variable.
+The  above code incorporates an additional reduction of 50 "harmony components" (i.e., corrected principal components) to our Seurat object, which is stored in the harmonized_seurat@reductions$harmony variable.
 
 However, to ensure that the Harmony integration is accurately represented in the data visualization, we must generate a UMAP that is derived from these harmony embeddings instead of the PCs.
 
@@ -2015,6 +2017,26 @@ plotList[[9]]
 dev.off()
 #
 ```
+Expression of cluster specific markers:
+- [cluster0](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster0.png)
+
+-[cluster1](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster1.png)
+
+-[cluster2](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster2.png)
+
+-[cluster3](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster3.png)
+
+-[cluster4](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster4.png)
+
+-[cluster5](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster5.png)
+
+-[cluster6](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster6.png)
+
+-[cluster7](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster7.png)
+
+-[cluster8](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster8.png)
+
+
 
 ```r
 # LYZ cells
@@ -2029,6 +2051,8 @@ FeaturePlot(object = harmonized_seurat,
 dev.off()
 
 ```
+To see where there [myeloid cells](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/LYZ_harmony_blca_clsuter_marker.png) are.
+
  ### Markers and cell types
  
  
@@ -2143,7 +2167,9 @@ DimPlot(epi_seurat,
         reduction = "umap")
 dev.off()
 #
-
+```
+[epi_harmony_UMAP_y_sample.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/epi_harmony_UMAP_y_sample.png)
+```r
 # color cells based on the cluster
 # Plot UMAP 
 png(filename = "cluster_epi_harmony_UMAP.png", width = 16, height = 8.135, units = "in", res = 300)
@@ -2152,7 +2178,10 @@ DimPlot(epi_seurat,
         label = TRUE,
         label.size = 6)
 dev.off()
+```
+[cluster_epi_harmony_UMAP.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cluster_epi_harmony_UMAP.png)
 
+```r
 # Marker identification
 
 epi_markers <- FindAllMarkers(object = epi_seurat, 
