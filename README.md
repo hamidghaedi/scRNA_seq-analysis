@@ -1836,20 +1836,21 @@ for (file in samples){
   assign(file, seurat_obj)
 }
 
+# updated sample name 
+samples_blca <- samples[-c(1,2,9)]
+
 # now merging all objects inot one Seurat obj
 
-merged_seurat <- merge(x = SRR12603780, 
-                       y = c(SRR12603781,
-                             SRR12603782,
-                             SRR12603783,
+merged_seurat <- merge(x = SRR12603782,
+                       y = c(SRR12603783,
                              SRR12603784,
                              SRR12603785,
                              SRR12603786,
                              SRR12603787,
-                             SRR12603788,
                              SRR12603789,
                              SRR12603790),
-                       add.cell.id = samples)
+                       add.cell.id = samples_blca)
+                       
 #________________________Filteration____________________________#
 # reading sampleInformation:
 sampleInformation <- read.csv("./sampleInfo.csv")
@@ -1902,10 +1903,9 @@ However, to ensure that the Harmony integration is accurately represented in the
 
 ```r
 harmonized_seurat <- RunUMAP(harmonized_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
-harmonized_seurat <- RunUTSNE(harmonized_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
+#harmonized_seurat <- RunUTSNE(harmonized_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
 
-
-#________________________SuperCluster Identification____________#
+#________________________Cluster identification and Inspect the effects of Harmony batch removel ____________#
 
 # to set reduction to harmony and finding the clusters
 harmonized_seurat <- FindNeighbors(object = harmonized_seurat, reduction = "harmony")
@@ -1913,6 +1913,23 @@ harmonized_seurat <- FindClusters(harmonized_seurat, resolution = c(0.1, 0.2, 0.
 
 # visualization
 Idents(harmonized_seurat) <- harmonized_seurat@meta.data$SCT_snn_res.0.1
+
+# color cells based on the sample name
+# Plot UMAP 
+png(filename = "harmony_UMAP_y_sample.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(harmonized_seurat,
+        group.by = "orig.ident",
+        reduction = "umap")
+dev.off()
+```
+
+![harmony_UMAP_y_sample.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_UMAP_y_sample.png)
+
+As the above figure suggests, Harmony did a great job in terms of removing the batch effects.
+
+```r
+#________________________SuperCluster Identification____________#
+
 png(filename = "harmony_umap_cluster_with_label.png", width = 16, height = 8.135, units = "in", res = 300)
 DimPlot(harmonized_seurat,
         reduction = "umap",
@@ -1928,21 +1945,6 @@ dev.off()
 # CD31: PECAM1
 markers <- c("EPCAM", "PECAM1", "COL1A1", "PDGFRA", "RGS5", "CD79A", "LYZ", "CD3D", "TPSAB1")
 
-png(filename = "tsne_superCluster_cells.png", width = 16, height = 8.135, units = "in", res = 300)
-FeaturePlot(object = harmonized_seurat,
-            features = markers,
-            order = TRUE,
-            min.cutoff = "q10",
-            reduction = "tsne",
-            label = TRUE,
-            repel = TRUE)
-
-dev.off()
-```
-![tsne_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/tsne_superCluster_cells.png)
-
-```r
-# umap
 png(filename = "umap_superCluster_cells.png", width = 16, height = 8.135, units = "in", res = 300)
 FeaturePlot(object = harmonized_seurat,
             features = markers,
@@ -1953,36 +1955,225 @@ FeaturePlot(object = harmonized_seurat,
             repel = TRUE)
 
 dev.off()
-
-#
 ```
-![umap_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_superCluster_cells.png)
+![umap_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/tsne_superCluster_cells.png)
+
+
+
+
+#### Marker identification for the 8 superclsuters:
+
+```r
+#______________________________ All markers________________________________
+# Find markers for every cluster compared to all remaining cells, report only the positive ones
+markers <- FindAllMarkers(object = harmonized_seurat, 
+                          only.pos = TRUE,
+                          logfc.threshold = 0.25) 
+
+saveRDS(markers, "harmony_markers.RDS")
+
+# mutate the markers dataframe
+# Extract top 10 markers per cluster
+
+top10 <- markers %>%
+  mutate(delta_pct = (pct.1 - pct.2)) %>%
+  #filter(avg_log2FC > 1.5) %>%  # only keep rows where avg_log2FC > 1.5
+  group_by(cluster) %>%
+  top_n(n = 10, wt = delta_pct)
+
+data.table::fwrite(top10, "harmony_blca_top10_all_markers.csv")
 
 ```
+Visualization of top markers in each cluster:
 
-# Adding a column to the meta.data
+Cluster markers:
+```r
+cluster_markers_10 <- top10 %>% 
+                   group_by(cluster) %>% 
+                   summarize(genes = paste(gene, collapse = ","))
+data.table::fwrite(cluster_markers_10, "cluster_markers_10.csv")
+```
 
-markers <- c("EPCAM", "PECAM1", "COL1A1", "PDGFRA", "RGS5", "CD79A", "LYZ", "CD3D", "TPSAB1")
-normalized_data <- harmonized_seurat@assays$RNA@data
-normalized_data <- normalized_data[rownames(normalized_data) %in% markers,]
-normalized_data <- t(as.matrix(normalized_data))
+```r
+# feature plot for top markers
+plotList = list()
 
-# Custom function to calculate superCluster value for each row
-getSuperCluster <- function(row) {
-  # Get column names where value > 0
-  cols <- names(row[row > 0])
-  if (length(cols) == 0) {
-    # If no columns have value > 0, return "None"
-    return("None")
-  } else if (length(cols) == 1) {
-    # If only one column has value > 0, return column name
-    return(cols)
-  } else {
-    # If multiple columns have value > 0, collapse column names with "/"
-    return(paste(cols, collapse = "/"))
-  }
+for(cluster in 1:nrow(cluster_markers_10)){
+    mkr = unlist(strsplit(cluster_markers_10$genes[cluster], ","))
+    plotList[[cluster]] = FeaturePlot(object = harmonized_seurat,
+            features = mkr,
+            order = TRUE,
+            min.cutoff = "q10",
+            reduction = "umap",
+            label = TRUE,
+            repel = TRUE)
 }
 
-# Apply custom function to each row and add result as new column
-superCluster <- apply(normalized_data, 1, getSuperCluster)
+# Iterate over all clusters
+png(filename = "harmony_blca_clsuter_markers_cluster8.png", width = 16, height = 8.135, units = "in", res = 300)
+plotList[[9]]
+dev.off()
+#
+```
 
+```r
+# LYZ cells
+png(filename = "LYZ_harmony_blca_clsuter_marker.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = harmonized_seurat,
+            features = c("LYZ"),
+            order = TRUE,
+            min.cutoff = "q10",
+            reduction = "umap",
+            label = TRUE,
+            repel = TRUE)
+dev.off()
+
+```
+ ### Markers and cell types
+ 
+ 
+| cluster_id| genes    | cell_type (PanglaoDB + ChatGPT)     |
+|-----------|----------------------------------------------------------|-------|
+|0 |       AGR2,C10orf99,SDC1,SERINC2,SMIM22,CLDN7,TNFRSF21,FAM160A1,CXADR,RAB25| epithelial cell |
+|1 |     CD52,CD3D,PTPRC,TRAC,CD7,CD2,SKAP1,ARHGAP15,HCST,CD3E|T-cells |
+|2 |      PLVAP,SPARCL1,HSPG2,VWF,TCF4,LDB2,CALCRL,RAMP2,PCAT19,PECAM1| Endothelial cells |
+|3 |      HLA-DRA,HLA-DPB1,TYROBP,HLA-DQA1,HLA-DRB1,HLA-DPA1,HLA-DQB1,FCER1G | APCs (Macrophages, B-cells)|
+|4 |      IGLC2,IGHG1,IGLC1,IGHG3,IGHA1,IGHG4,JCHAIN,IGHGP,MZB1,DERL3 | B-cells|
+|5 |      RGS5,TAGLN,ACTA2,MYL9,CALD1,PPP1R14A,BGN,PRKG1,SOD3,COL6A2 |myo-CAFs |
+|6 |      LUM,DCN,COL1A2,COL3A1,RARRES2,MFAP4,C1S,C1R,COL6A2,COL6A3 | i-CAFS|
+|7 |      TPSB2,TPSAB1,CPA3,HPGDS,LTC4S,MS4A2,SAMSN1,RGS13,FCER1G,TYROBP |Mast cells|
+|8 |      MIR205HG,COL4A5,IGFBP2,LINC00511,FOSL1,BCAM,RAP2B,SLC35F1,AQP3,DENND2C| Epithelial cells + Mesenchymal cells |
+
+```r
+# renaming clusters
+
+# Rename all identities
+harmonized_seurat <- RenameIdents(object = harmonized_seurat, 
+                               "0" = "Epithelial cells",
+                               "1" = "T-cells", # impureity with epithelial cells
+                               "2" = "Endothelial cells",
+                               "3" = "APCs(Macrophages, B-cells)",
+                               "4" = "B-cells",
+                               "5" = "myo-CAF",
+                               "6" = "i-CAF",
+                               "7" = "Mast cells",
+                               "8" = "Epithelial cells+Mesenchymal cells")
+                               
+                               
+                               
+
+
+# Plot the UMAP withy new labells
+png(filename = "harmont_blca_umap_with_label.png", width = 16, height = 8.135, units = "in", res = 600)
+DimPlot(object = harmonized_seurat, 
+        reduction = "umap", 
+        label = TRUE,
+        label.size = 3,
+        repel = TRUE,
+        split.by = "Invasiveness")
+dev.off()
+```
+![harmont_blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmont_blca_umap_with_label.png)
+
+Cluster 1, T-cells shows some level of impurity by cluster 0, epithelial cells. This Impurity is especially evident in invasive samples. 
+
+```r
+# Obtaining clsuters with epithelial cells
+
+# To see the number of cells in each clsuter
+
+table(Idents(harmonized_seurat))
+
+#
+#                  epithelial cells                            T-cells
+#                             24135                              19850
+#                 Endothelial cells         APCs(Macrophages, B-cells)
+#                              6699                               5233
+#                           B-cells                            myo-CAF
+#                              4448                               2877
+#                             i-CAF                         Mast cells
+#                              2337                               1126
+#Epithelial cells+Mesenchymal cells
+#                               725
+#
+epi_cell_ids <- rownames(harmonized_seurat@meta.data)[harmonized_seurat@meta.data$SCT_snn_res.0.1 == '0']
+
+epi_cell_ids <- c(epi_cell_ids,rownames(harmonized_seurat@meta.data)[harmonized_seurat@meta.data$SCT_snn_res.0.1 == '8'])
+
+
+epi_seurat <- subset(filtered_seurat, subset = cells %in% epi_cell_ids)
+
+# Perform log-normalization and feature selection, as well as SCT normalization on global object
+epi_seurat <- epi_seurat %>%
+    NormalizeData() %>%
+    FindVariableFeatures(selection.method = "vst", nfeatures = 3000) %>% 
+    ScaleData() %>%
+    SCTransform(vars.to.regress = c("mitoRatio", "orig.ident"))
+
+# Calculate PCs using variable features determined by SCTransform (3000 by default)
+epi_seurat <- RunPCA(epi_seurat, assay = "SCT", npcs = 50)
+#epi_seurat <- RunTSNE(epi_seurat, assay = "SCT", npcs = 50)
+
+# Integration
+#install.packages("harmony")
+
+library(harmony)
+
+epi_seurat <- RunHarmony(epi_seurat, 
+				group.by.vars = c("orig.ident", "gender", "Surgery_Type"), 
+				reduction = "pca", assay.use = "SCT", reduction.save = "harmony")
+
+epi_seurat <- RunUMAP(epi_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
+#harmonized_seurat <- RunUTSNE(harmonized_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
+
+#Cluster identification and Inspect the effects of Harmony batch removel#
+
+# to set reduction to harmony and finding the clusters
+epi_seurat <- FindNeighbors(object = epi_seurat, reduction = "harmony")
+epi_seurat <- FindClusters(epi_seurat, resolution = c(0.1, 0.2, 0.4, 0.6, 0.8))
+
+# visualization
+Idents(epi_seurat) <- epi_seurat@meta.data$SCT_snn_res.0.1
+
+# color cells based on the sample name
+# Plot UMAP 
+png(filename = "epi_harmony_UMAP_y_sample.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(epi_seurat,
+        group.by = "orig.ident",
+        reduction = "umap")
+dev.off()
+#
+
+# color cells based on the cluster
+# Plot UMAP 
+png(filename = "cluster_epi_harmony_UMAP.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(epi_seurat,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
+
+# Marker identification
+
+epi_markers <- FindAllMarkers(object = epi_seurat, 
+                          only.pos = TRUE,
+                          logfc.threshold = 0.15) 
+
+# mutate the markers dataframe
+# Extract top 10 markers per cluster
+
+epi_top10 <- epi_markers %>%
+  mutate(delta_pct = (pct.1 - pct.2)) %>%
+  #filter(avg_log2FC > 1.5) %>%  # only keep rows where avg_log2FC > 1.5
+  group_by(cluster) %>%
+  top_n(n = 10, wt = delta_pct)
+
+
+epi_cluster_markers_10 <- epi_top10 %>% 
+                   group_by(cluster) %>% 
+                   summarize(genes = paste(gene, collapse = ","))
+```
+## Trajectory analysis for Epithelial cells:
+
+```r 
+epi_seurat <- readRDS("epi_seurat")
