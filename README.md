@@ -2020,21 +2020,21 @@ dev.off()
 Expression of cluster specific markers:
 - [cluster0](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster0.png)
 
--[cluster1](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster1.png)
+- [cluster1](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster1.png)
 
--[cluster2](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster2.png)
+- [cluster2](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster2.png)
 
--[cluster3](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster3.png)
+- [cluster3](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster3.png)
 
--[cluster4](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster4.png)
+- [cluster4](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster4.png)
 
--[cluster5](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster5.png)
+- [cluster5](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster5.png)
 
--[cluster6](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster6.png)
+- [cluster6](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster6.png)
 
--[cluster7](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster7.png)
+- [cluster7](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster7.png)
 
--[cluster8](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster8.png)
+- [cluster8](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster8.png)
 
 
 
@@ -2168,7 +2168,7 @@ DimPlot(epi_seurat,
 dev.off()
 #
 ```
-[epi_harmony_UMAP_y_sample.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/epi_harmony_UMAP_y_sample.png)
+![epi_harmony_UMAP_y_sample.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/epi_harmony_UMAP_y_sample.png)
 ```r
 # color cells based on the cluster
 # Plot UMAP 
@@ -2179,7 +2179,7 @@ DimPlot(epi_seurat,
         label.size = 6)
 dev.off()
 ```
-[cluster_epi_harmony_UMAP.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cluster_epi_harmony_UMAP.png)
+![cluster_epi_harmony_UMAP.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cluster_epi_harmony_UMAP.png)
 
 ```r
 # Marker identification
