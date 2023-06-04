@@ -2520,27 +2520,34 @@ dev.off()
 |6       |ADAMTS9-AS2,EBF1,SPARCL1,PLCB4,CAVIN1,ZEB1,SLC2A3,CAV1,TCF4,KLF2|early_stage_basal_cells
 
 Reason for nomenclature:
+
 **cluster 0**
-late-intermediate_stage
+
 This cluster includes genes that are expressed in the luminal layer of bladder tissue. However, the specific combination of markers suggests a relatively early or intermediate stage of luminal cell differentiation.
 
 **cluster 1**
+
 Based on the gene expression profile of GMNN, SLC7A11, ANXA10, NRARP, SLC12A6, TFF1, PTGS2, ODC1, DSP, and MIR31HG, a possible name for the group of cells could be "Stromal-Associated Cluster" or "Mesenchymal-Enriched Cluster". This suggestion is based on the presence of genes like ANXA10 and DSP, which are typically associated with mesenchymal or stromal cell types. Additionally, genes like PTGS2 and SLC7A11 are commonly expressed in stromal or immune cells and may suggest an association with the tumor microenvironment or immune response.
 
 **cluster 2**
+
 This cluster consists of genes associated with early differentiation processes and transcriptional regulation. The presence of genes like EGR1 and KLF10 suggests an early stage in the differentiation process.
 
 
 **cluster 3**
-luminal cells
+This cluster also contains markers associated with both basal and luminal cell characteristics. While KRT20 suggests a luminal presence, the combination of markers does not indicate a well-defined stage of luminal differentiation.
+
 
 **cluster 4**
+
 This cluster shows a mix of genes associated with both basal and luminal cell characteristics. While it may not represent the most differentiated luminal cells, it could be positioned in an intermediate stage of differentiation.
 
 **cluster 5**
+
 Luminal Differentiation Cluster: This name is suggested based on the presence of markers such as UPK2 and KRT20. UPK2 (Uroplakin 2) is a marker of luminal/umbrella cells in the urothelium, which lines the bladder and urethra. KRT20 is also a luminal marker and is associated with differentiated epithelial cells in various tissues. This suggests that the cluster may represent a group of cells undergoing luminal differentiation or with a mature luminal phenotype.
 
 **cluster 6**
+
 Basal like: This name emphasizes the presence of markers like ZEB1, TCF4, and KLF2, which have been associated with basal-like features in various epithelial tissues. It suggests that the cluster may represent cells with a basal-like differentiation program.
 
 ```r
