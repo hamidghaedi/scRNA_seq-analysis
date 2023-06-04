@@ -2,6 +2,18 @@
 
 This repo presents steps needed to make sense of single cell RNA sequencing (scRNA) data. I used a scRNA dataset coming from Zhaohui Chen *et al.* [paper](https://www.nature.com/articles/s41467-020-18916-5#Sec12) published in Nature Communications 11, Article number: 5077 (2020). The cohort consisted of eight primary bladder tumor tissues (2 low-grade bladder urothelial tumors, six high-grade bladder urothelial tumors) along with 3 adjacent normal mucosae. In SRA datasets are under BioProject [PRJNA662018](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA662018) and SRA-explorer can be used to download the data. For practical scRNA-seq analysis I followed this elegant [tutorial](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) from Harvard Chan Bioinformatics Core. 
 
+Contents:
+
+1) [Data download on ComputeCanada](https://github.com/hamidghaedi/scRNA_seq-analysis#1-data-download-on-computecanada)
+2) [Generating feature-sample expression matrix](https://github.com/hamidghaedi/scRNA_seq-analysis#2-generating-feature-sample-expression-matrix)
+3) [Loading single-cell RNA-seq count data](https://github.com/hamidghaedi/scRNA_seq-analysis#3-loading-single-cell-rna-seq-count-data)
+4) [Quality control](https://github.com/hamidghaedi/scRNA_seq-analysis#4-quality-control)
+5) [Normalization, regressing out unwanted variation and clustering](https://github.com/hamidghaedi/scRNA_seq-analysis#5-normalization-regressing-out-unwanted-variation-and-clustering)
+6) [marker identification] (https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
+7) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
+8) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
+
+
 
 ## 1) Data download on ComputeCanada
 
@@ -2303,6 +2315,8 @@ dev.off()
 
 
 ## Trajectory inference
+
+Slingshot is a computational method designed for cell lineage inference and pseudotime estimation in single-cell transcriptomics data. It operates by leveraging gene expression dynamics to reconstruct the developmental trajectories of individual cells and assign them pseudotime values. The method begins by clustering cells based on their gene expression profiles, allowing for the identification of distinct cell populations. It then performs differential expression analysis to identify genes that are dynamically expressed across these populations, capturing the transitions between different cell types or states. Slingshot uses this information to infer lineage relationships between the cell populations, revealing the hierarchical structure of the developmental trajectory. By assigning pseudotime values, Slingshot estimates the relative progression of cells through different stages of development or biological processes. The inferred trajectories and pseudotime values provide insights into the temporal ordering of cellular events and gene expression dynamics. Slingshot's visualization tools facilitate the exploration and interpretation of these results, enabling researchers to gain a deeper understanding of the underlying processes driving cellular differentiation and disease progression in single-cell transcriptomics data.
 
 ```r
 png(filename = "trajectory.png", width = 16, height = 8.135, units = "in", res = 300)
