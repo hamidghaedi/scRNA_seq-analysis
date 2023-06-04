@@ -2302,7 +2302,7 @@ dev.off()
 ![enrichment_3.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/enrichment_3.png)
 
 
-##Trajectory inference
+## Trajectory inference
 
 ```r
 png(filename = "trajectory.png", width = 16, height = 8.135, units = "in", res = 300)
@@ -2312,474 +2312,264 @@ dev.off()
 ```
 ![trajectory.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/trajectory.png)
 
-```
-```r
-library(SCP)
-
-
-
-
-The approach is to consider each cluster as an individual sample and use sum of normalized expression for GSVA analysis
+## Exploring bladder normal mocusa samples
 
 ```r
-# Load libraries
-library(dplyr)
-library(cowplot)
-library(Matrix.utils)
-library(edgeR)
-library(Matrix)
-library(reshape2)
-library(S4Vectors)
-library(SingleCellExperiment)
-library(pheatmap)
-library(apeglm)
-library(png)
-library(DESeq2)
-library(RColorBrewer)
-library(data.table)
-library(fgsea)
-library(GSVA)
-library(Seurat)
-
-
-
-
-# Extract raw counts and metadata to create SingleCellExperiment object
-counts <- epi_seurat@assays$RNA@counts 
-
-
-# select subset of metadata
-metadata <- data.frame(epi_seurat@meta.data)
-# Set up metadata as desired for aggregation and DE analysis
-metadata$cluster_id <- factor(epi_seurat@active.ident)
-
-
-
-# Create single cell experiment object
-sce <- SingleCellExperiment(assays = list(counts = counts), 
-                           colData = metadata)
-
-## Check the assays present
-assays(sce)
-
-## Check the counts matrix
-dim(counts(sce))
-counts(sce)[1:6, 1:6]
-
-
-# Explore the cellular metadata for the dataset
-
-dim(colData(sce))
-head(colData(sce))
-
-
-# Preparing the single-cell dataset for pseudobulk analysis
-
-
-# Extract unique names of clusters (= levels of cluster_id factor variable)
-cluster_names <- levels(colData(sce)$cluster_id)
-cluster_names
-
-# Total number of clusters
-length(cluster_names)
-
-# Subset metadata to include only the variables you want to aggregate across (here, we want to aggregate by sample and by cluster)
-groups <- colData(sce)[, c("cluster_id", "orig.ident")]
-head(groups)
-
-
-# Aggregate across cluster-sample groups
-# transposing row/columns to have cell_ids as row names matching those of groups
-aggr_counts <- aggregate.Matrix(t(counts(sce)), 
-                                groupings = groups, fun = "sum") 
-
-# Explore output matrix
-class(aggr_counts)
-dim(aggr_counts)
-aggr_counts[1:6, 1:6]
-
-# Splitting the counts matrix by cell type
-
-# Transpose aggregated matrix to have genes as rows and samples as columns
-aggr_counts <- t(aggr_counts)
-aggr_counts[1:6, 1:6]
-
-
-# splitting column names to get cell type per sample
-#
-cluster_names <- unique(metadata$cluster_id)
-
-
-# Extract sample-level variables
-metadata <- colData(sce) %>% 
-  as.data.frame() %>% 
-  dplyr::select(orig.ident, gender,age,Grade,Invasiveness,cluster_id)
-
-dim(metadata)
-head(metadata)
-
-# Exclude duplicated rows
-metadata <- metadata[!duplicated(metadata), ]
-
-dim(metadata)
-head(metadata)
-
-# Rename rows
-#rownames(metadata) <- metadata$orig.ident
-#head(metadata)
-
-# adding cell count to the metadata
-t <- data.frame(table(colData(sce)$orig.ident, colData(sce)$cluster_id))
-t$comb <- paste0(t$Var2,"_",t$Var1)
-
-
-
-metadata <- metadata %>%
-  mutate(comb = paste0(cluster_id, "_", orig.ident)) %>%
-  left_join(., t) %>%
-  mutate(orig.ident = as.factor(orig.ident),
-        gender = as.factor(gender),
-        Invasiveness = as.factor(Invasiveness),
-        Grade = as.factor(Grade)) %>%
-  select(orig.ident, gender, age, Grade, Invasiveness, cluster_id, Freq)
-  
-names(metadata)[1] <- "sample_id"
-
-# set row names         
-rownames(metadata) <-paste(metadata$cluster_id,metadata$sample_id,  sep = "_")
-
-# making order of samples the same between metadata and expression matrix
-metadata <- metadata[colnames(aggr_counts),]
-
-all(rownames(metadata) == colnames(aggr_counts))
-
-# convert chr columns to factor and scale/center numerical columns in metadata
-
-
-
-```
-## DE using DESeq2 
-
-```r
-# Create a DESeqDataSet object
-dds <- DESeqDataSetFromMatrix(countData = aggr_counts,
-                              colData = metadata,
-                              design = ~ cluster_id + sample_id)
-
-
-# Transform counts for data visualization
-vsd <- vst(dds, blind=FALSE)
-
-# Plot PCA
-
-png(filename = "pca_plots_by_sample_id.png", width = 16, height = 8.135, units = "in", res = 300)
-DESeq2::plotPCA(vsd, ntop = 500, intgroup = "sample_id")
-dev.off()
-```
-![pca_plots_by_sample_id](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/pca_plots_by_sample_id.png)
-
-As we can see from the PCA plots, the samples are clustered based on the batches. As a reminder each samples were sequenced individually and so the sample IDs here are batch IDs. Lets use `ComBat-Seq()` to remove the batch effect:
-
-```r
-# define batch variable
-library(sva)
-library(PCAtools)
-  
-batch <- metadata$sample_id
-
-covar_mat <- metadata[, -c(1,7)] # if more than covariate needed to be preserved
-group <- metadata$clusterid
-# running ComBat_seq()
-adjusted_counts <- ComBat_seq(as.matrix(aggr_counts), batch=batch, group=group)
-#adjusted_counts <- ComBat_seq(assay(vsd), batch=batch, group=group)
-
-# perform PCA
-p <- pca(adjusted_counts, metadata = metadata, removeVar = 0.1)
-
-biplot(p, lab = NULL, colby = "Freq", legendPosition = 'right')
-
-
-# new dds
-
-ndds <-  DESeqDataSetFromMatrix(countData = adjusted_counts,
-                              colData = metadata,
-                              design = ~ cluster_id)
-
-
-# Transform counts for data visualization
-nvsd <- vst(ndds, blind=FALSE)
-
-# Plot PCA
-
-png(filename = "pca_plots_by_sample_id_after_combat_seq.png", width = 16, height = 8.135, units = "in", res = 300)
-DESeq2::plotPCA(nvsd, ntop = 500, intgroup = "cluster_id")
-dev.off()
-```
-![pca_plots_by_sample_id_after_combat_seq](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/pca_plots_by_sample_id_after_combat_seq.png)
-
-As the plot suggests `ComBat_seq()` did a great job regarding to removing the effect of batches on the dataset.  We will continue with enrichment analysis. 
-
-```
-# DE analysis and enrichement analysis
-ndds <-  DESeqDataSetFromMatrix(countData = adjusted_counts,
-                              colData = metadata,
-                            design = ~ cluster_id)
-dds <- DESeq(ndds)
-res <- results(dds)
-
-res <- na.omit(res)
-#summary(res)
-
-resultsNames(dds)
-#[1] "Intercept"                                               
-#[2] "cluster_id_cancer_associated_luminal_cell_vs_basal_cell" 
-#[3] "cluster_id_differentiated_luminal_cell_vs_basal_cell"    
-#[4] "cluster_id_unique_luminal_cell_vs_basal_cell"            
-#[5] "cluster_id_immunomodulatory_luminal_cell_vs_basal_cell"  
-#[6] "cluster_id_adhesion_signaling_luminal_cell_vs_basal_cell"
-
-# To get result for a given contrast:
-res <- results(dds, contrast=c("cluster_id","differentiated_luminal_cell","basal_cell"))
-
-# To obtain DE result for all possible contrasts:
-
-# Create an empty list to store the results
-results_list <- list()
-
-# Iterate over each cluster level
-for (i in 1:length(unique(metadata$cluster_id))) {
-  for (j in 1:length(unique(metadata$cluster_id))) {
-    if (i != j) {
-      level1 <- unique(metadata$cluster_id)[i]
-      level2 <- unique(metadata$cluster_id)[j]
-      
-      # Create a contrast based on the cluster levels
-      contrast <- colMeans(mod_mat[ndds$cluster_id == level1, ]) - colMeans(mod_mat[ndds$cluster_id == level2, ])
-      
-      # Generate a unique name for the contrast
-      contrast_name <- paste(level1, "vs", level2, sep="_")
-      
-      # Store the contrast in the results list
-      results_list[[contrast_name]] <- results(dds, contrast = contrast)
-    }
-  }
+#________________________Reading the files______________________#
+
+samples <- c("SRR12603780", "SRR12603781", "SRR12603788")
+
+# read files inot Seurat objects
+for (file in samples){
+  print(paste0(file))
+  seurat_data <- Read10X(data.dir = paste0("../filtered/", file))
+  seurat_obj <- CreateSeuratObject(counts = seurat_data, 
+                                   min.features = 100, 
+                                   project = file)
+  assign(file, seurat_obj)
 }
 
 
+# now merging all objects inot one Seurat obj
 
-# Enrichement analysis
-library(progress)
-library(fgsea)
-library(dplyr)
+merged_seurat <- merge(x = SRR12603780,
+                       y = c(SRR12603781,
+                             SRR12603788),
+                       add.cell.id = samples)
+                       
+#________________________Filteration____________________________#
+# reading sampleInformation:
+sampleInformation <- read.csv("../sampleInfo.csv")
 
-# define gene set. The script used to generate merged_gene_set: merged_gene_set.R
-pathways <- readRDS("merged_gene_sets.rds")
+# Compute percent mito ratio
+merged_seurat$mitoRatio <- PercentageFeatureSet(object = merged_seurat, pattern = "^MT-")
+merged_seurat$mitoRatio <- merged_seurat@meta.data$mitoRatio / 100
 
-# Identify statistically significant enriched pathway
-gsea_list = list()
-
-# Create a progress bar
-pb <- progress_bar$new(total = length(results_list), width = 30)
-
-
-# Iterate over each contrast in the results_list
-for (i in 1:length(results_list)) {
-  tryCatch({
-    # Get the ranks from the results list
-    ranks <- data.frame(na.omit(results_list[[i]]))$stat
-    names(ranks) <- rownames(data.frame(na.omit(results_list[[i]])))
-    
-    # Run fgseaMultilevel
-    fgseaRes <- fgseaMultilevel(pathways = pathways, stats = ranks, minSize = 20,
-                                maxSize = 500, eps = 0)
-    
-    # Tidying
-    fgseaResTidy <- fgseaRes %>%
-      as_tibble() %>%
-      filter(padj < 0.05 & NES > 0) %>% 
-      arrange(desc(NES))
-    
-    # Store the tidied results in the gsea_list
-    gsea_list[[i]] <- fgseaResTidy
-    
-    # Increment the progress bar
-    pb$tick()
-  }, error = function(e) {
-    # If an error occurs, print an error message and continue to the next iteration
-    cat("Error occurred for contrast", i, ":", conditionMessage(e), "\n")
-    pb$tick()
-  })
-}
-names(gsea_list) <- names(results_list)
+# adding cell column
+merged_seurat$cells <- rownames(merged_seurat@meta.data)
+# merging with sample information
+merged_seurat@meta.data <- merge(merged_seurat@meta.data, sampleInformation)
+# re-setting the rownames
+rownames(merged_seurat@meta.data) <- merged_seurat@meta.data$cells
 
 
-# to see occurnes of each pathway in dataset:
-pathwa_counts_list = list()
+# Filteration
 
-# Iterate over each level in the gsea_list
-for (l in names(gsea_list)) {
-  # Extract the level name from the contrast
-  level_name <- unlist(strsplit(l, "_vs_"))[1]
-  # Get the contrasts for the current level
-  level_contrasts <- names(gsea_list)[startsWith(names(gsea_list), level_name)]
-  # Iterate over each contrast for the current level
-  paths<- c()
-  cnt <- c()
-  level_n <- c()
-  for (i in 1:length(level_contrasts)) {
-    # Get the pathway names for the current contrast
-    pathway_names <- gsea_list[[level_contrasts[i]]]$pathway
-    contrast <- rep(level_contrasts[i], length(pathway_names))
-    level <- rep(level_name, length(pathway_names))
-    paths <- c(paths, pathway_names)
-    cnt <- c(cnt, contrast)
-    level_n <- c(level_n, level)
-  }
-  tmp_df <- data.frame(level = level_n,pathway = paths, contrasts = cnt)
-  tmp_df <- tmp_df2 <- tmp_df %>%
-  group_by(pathway) %>%
-  summarise(count = n(), level = first(level), contrasts_combined = toString(contrasts)) %>%
-  ungroup()
-  pathwa_counts_list[["level_name"]] <- tmp_df
-}
+filtered_seurat <- subset(merged_seurat, 
+                          subset= nCount_RNA >= 1000 &
+                          nFeature_RNA <= 6000 & 
+                          mitoRatio < 0.10)
 
-# Calculate the total count for each pathway within each level
-pathway_counts <- pathway_counts %>%
-  group_by(level, pathway) %>%
-  summarise(count = sum(count), contrasts = toString(contrasts)) %>%
-  arrange(level, desc(count))
+#________________________Integration using Harmony____________________________#
+#integration using harmony need sevral steps to be undertaken:
 
-# Print the pathway counts dataframe
-pathway_counts
+# Perform log-normalization and feature selection, as well as SCT normalization on global object
+merged_seurat <- filtered_seurat %>%
+    NormalizeData() %>%
+    FindVariableFeatures(selection.method = "vst", nfeatures = 3000) %>% 
+    ScaleData() %>%
+    SCTransform(vars.to.regress = c("mitoRatio", "orig.ident"))
 
+# Calculate PCs using variable features determined by SCTransform (3000 by default)
+merged_seurat <- RunPCA(merged_seurat, assay = "SCT", npcs = 50)
 
+# Integration
+#install.packages("harmony")
 
+library(harmony)
 
+harmonized_seurat <- RunHarmony(merged_seurat, 
+				group.by.vars = c("orig.ident", "Surgery_Type"), 
+				reduction = "pca", assay.use = "SCT", reduction.save = "harmony")
 
+harmonized_seurat <- RunUMAP(harmonized_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
 
+#Cluster identification and Inspect the effects of Harmony batch removel ____________#
 
-
-
-
-
-
-fgseaRes <- fgseaMultilevel(pathways=pathways, stats=ranks, minSize = 20, maxSize = 500, eps = 0)
-
-# Tidy the results:
-fgseaResTidy <- fgseaRes %>%
-  as_tibble() %>%
-  filter(padj < 0.05) %>% 
-  arrange(desc(NES)) 
-
-
-
-# show few lines from the pathways file
-head(pathways)
-
-# running the enrichemnet
-es2GSVA <- gsva(ndds, pathways, min.sz=10, 
-                            max.sz=500,
-                            method= "ssgsea",
-                            kcdf="Poisson")
-# epi pathways scores
-ssgsea <- es2GSVA@assays@data@listData[["es"]]
+# to set reduction to harmony and finding the clusters
+harmonized_seurat <- FindNeighbors(object = harmonized_seurat, reduction = "harmony")
+harmonized_seurat <- FindClusters(harmonized_seurat, resolution = c(0.1, 0.2, 0.4, 0.6, 0.8))
 
 # visualization
-cal_z_score <- function(x){
-  (x - mean(x)) / sd(x)
-}
- 
-data_subset_norm <- t(apply(ssgsea, 1, cal_z_score))
-pheatmap(data_subset_norm)
+Idents(harmonized_seurat) <- harmonized_seurat@meta.data$SCT_snn_res.0.1
 
+# color cells based on the sample name
+# Plot UMAP 
+png(filename = "normal_harmony_UMAP_y_sample.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(harmonized_seurat,
+        group.by = "orig.ident",
+        reduction = "umap")
+dev.off()
 
-                           
+#________________________SuperCluster Identification____________#
 
+png(filename = "normal_harmony_umap_cluster_with_label.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(harmonized_seurat,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
 
+# lets visualize cells expressing supercluster markers:
+# CD31: PECAM1
+markers <- c("EPCAM", "PECAM1", "COL1A1", "PDGFRA", "RGS5", "CD79A", "LYZ", "CD3D", "TPSAB1")
+
+png(filename = "normal_umap_superCluster_cells.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = harmonized_seurat,
+            features = markers,
+            order = TRUE,
+            min.cutoff = "q10",
+            reduction = "umap",
+            label = TRUE,
+            repel = TRUE)
+
+dev.off()
 ```
-## Trajectory analysis for Epithelial cells:
-I use Monocle3 to perform trajectory analysis
-
-```r 
-library(monocle3)
-library(SeuratWrappers)
-library(ggplot2)
-library(dplyr)
+![normal_umap_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_umap_superCluster_cells.png)
 
 
+It seems the epithelial cells are clustered together in cluster 4. So for further analysis , I will be focusing on these cells. 
+```r
+epi_cell_ids <- rownames(harmonized_seurat@meta.data)[harmonized_seurat@meta.data$SCT_snn_res.0.1 == '4']
+
+epi_seurat <- subset(filtered_seurat, subset = cells %in% epi_cell_ids)
+
+# Perform log-normalization and feature selection, as well as SCT normalization on global object
+epi_seurat <- epi_seurat %>%
+    NormalizeData() %>%
+    FindVariableFeatures(selection.method = "vst", nfeatures = 3000) %>% 
+    ScaleData() %>%
+    SCTransform(vars.to.regress = c("mitoRatio", "orig.ident"))
+
+# Calculate PCs using variable features determined by SCTransform (3000 by default)
+epi_seurat <- RunPCA(epi_seurat, assay = "SCT", npcs = 50)
+
+epi_seurat <- RunHarmony(epi_seurat, 
+				group.by.vars = c("orig.ident", "Surgery_Type"), 
+				reduction = "pca", assay.use = "SCT", reduction.save = "harmony")
+
+epi_seurat <- RunUMAP(epi_seurat, reduction = "harmony", assay = "SCT", dims = 1:40)
 
 
+#Cluster identification and Inspect the effects of Harmony batch removel#
 
-# MONOCLE3 WORKFLOW ---------------------
-# monocle3 requires cell_data_set object
-# convert seurat object to cell_data_set object for monocle3
+# to set reduction to harmony and finding the clusters
+epi_seurat <- FindNeighbors(object = epi_seurat, reduction = "harmony")
+epi_seurat <- FindClusters(epi_seurat, resolution = c(0.1, 0.2, 0.4, 0.6, 0.8))
+
+# visualization
+Idents(epi_seurat) <- epi_seurat@meta.data$SCT_snn_res.0.1
 
 
+# color cells based on the cluster
+# Plot UMAP 
+png(filename = "normal_cluster_epi_harmony_UMAP.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(epi_seurat,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
+```
+![normal_cluster_epi_harmony_UMAP.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_cluster_epi_harmony_UMAP.png)
+
+```r
+# Marker identification
+
+epi_markers <- FindAllMarkers(object = epi_seurat, 
+                          only.pos = TRUE,
+                          logfc.threshold = 0.25) 
+
+# mutate the markers dataframe
+# Extract top 10 markers per cluster
+
+epi_top10 <- epi_markers %>%
+  mutate(delta_pct = (pct.1 - pct.2)) %>%
+  #filter(avg_log2FC > 1.5) %>%  # only keep rows where avg_log2FC > 1.5
+  group_by(cluster) %>%
+  top_n(n = 10, wt = delta_pct)
 
 
+epi_cluster_markers_10 <- epi_top10 %>% 
+                   group_by(cluster) %>% 
+                   summarize(genes = paste(gene, collapse = ","))
+                   
+                   
+# Insepecting the expression patterns
+png(filename = "normal_markers_cells.png", width = 16, height = 8.135, units = "in", res = 300)
+FeaturePlot(object = epi_seurat,
+            features = unlist(strsplit(epi_cluster_markers_10[2,]$genes, split = ",")),
+            order = TRUE,
+            min.cutoff = "q10",
+            reduction = "umap",
+            label = TRUE,
+            repel = TRUE)
 
-#1- Convert to cell_data_set object 
+dev.off()
+                   
+```
+![normal_markers_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_markers_cells.png)
 
-cds <- as.cell_data_set(epi_seurat)
-cds
+| cluster|genes| cluster name|
+|--------|-----|-----|
+|0       |HS6ST3,SLC9A2,GSTM3,CLMN,GRK3,GRHL1,ZNF710,ERBB3,SLC17A5,ASTN2|luminal_intermediate_stage
+|1       |GMNN,SLC7A11,ANXA10,NRARP,SLC12A6,TFF1,PTGS2,ODC1,DSP,MIR31HG|stromal_associated|
+|2       |EGR1,DUSP2,DDIT4,DDIT3,KLF10,GATA2,TXNIP,AC005920.2,AL691403.1,PLA2G6|early_stage_basal_cell|
+|3       |NBAT1,BICC1,ZNF350-AS1,SULT1E1,CASC15,KRT20,PTN,B4GALT3,RHEX,SCHLAP1|intermediated_luminal_cell|
+|4       |PALLD,SPOCK3,NRG1,MYO1B,NAV2,ETS1,CAV1,KRT5,FLNA,TUBB6|intermediate_stage_basal_cell |
+|5       |BCAT1,UPK2,MAL,ARMT1,SDHAF4,PTN,KRT20,SNX31,C4orf48,ISG15|luminal_differentiated|
+|6       |ADAMTS9-AS2,EBF1,SPARCL1,PLCB4,CAVIN1,ZEB1,SLC2A3,CAV1,TCF4,KLF2|early_stage_basal_cells
 
-# to get cell metadata (like seurat@meta.data)
-colData(cds)
+Reason for nomenclature:
+**cluster 0**
+late-intermediate_stage
+This cluster includes genes that are expressed in the luminal layer of bladder tissue. However, the specific combination of markers suggests a relatively early or intermediate stage of luminal cell differentiation.
 
-# to gene metdata
-rownames(fData(cds))[1:10]
+**cluster 1**
+Based on the gene expression profile of GMNN, SLC7A11, ANXA10, NRARP, SLC12A6, TFF1, PTGS2, ODC1, DSP, and MIR31HG, a possible name for the group of cells could be "Stromal-Associated Cluster" or "Mesenchymal-Enriched Cluster". This suggestion is based on the presence of genes like ANXA10 and DSP, which are typically associated with mesenchymal or stromal cell types. Additionally, genes like PTGS2 and SLC7A11 are commonly expressed in stromal or immune cells and may suggest an association with the tumor microenvironment or immune response.
 
-# Adding the gene_short_name column, 
-fData(cds)$gene_short_name <- rownames(fData(cds))
+**cluster 2**
+This cluster consists of genes associated with early differentiation processes and transcriptional regulation. The presence of genes like EGR1 and KLF10 suggests an early stage in the differentiation process.
 
-# to get counts
-counts(cds)
 
-# 2- Cluster cells (using clustering info from seurat's UMAP)-
+**cluster 3**
+luminal cells
 
-# assign paritions
-reacreate.partition <- c(rep(1,length(cds@colData@rownames)))
-names(reacreate.partition) <- cds@colData@rownames
-reacreate.partition <- as.factor(reacreate.partition)
+**cluster 4**
+This cluster shows a mix of genes associated with both basal and luminal cell characteristics. While it may not represent the most differentiated luminal cells, it could be positioned in an intermediate stage of differentiation.
 
-cds@clusters$UMAP$partitions <- reacreate.partition
+**cluster 5**
+Luminal Differentiation Cluster: This name is suggested based on the presence of markers such as UPK2 and KRT20. UPK2 (Uroplakin 2) is a marker of luminal/umbrella cells in the urothelium, which lines the bladder and urethra. KRT20 is also a luminal marker and is associated with differentiated epithelial cells in various tissues. This suggests that the cluster may represent a group of cells undergoing luminal differentiation or with a mature luminal phenotype.
 
-# Assign the cluster info 
+**cluster 6**
+Basal like: This name emphasizes the presence of markers like ZEB1, TCF4, and KLF2, which have been associated with basal-like features in various epithelial tissues. It suggests that the cluster may represent cells with a basal-like differentiation program.
 
-list_cluster <- epi_seurat@active.ident
-cds@clusters$UMAP$clusters <- list_cluster
+```r
+# Rename all identities
+epi_seurat <- RenameIdents(object = epi_seurat,
+                                "0" = "intermediate_luminal",
+                                "1" = "stromal_associated",
+                                "2" = "early_basal_1",
+                                "3" = "luminal[KRT20]_basal",
+                                "4" = "luminal_basal[KRT5]",
+                                "5" = "luminal_differentiated",
+                                "6" = "early_basal_0")
+# Plot the UMAP withy new labells
+png(filename = "normal_labelled_epi.png", width = 16, height = 8.135, units = "in", res = 600)
+DimPlot(object = epi_seurat, 
+        reduction = "umap", 
+        label = TRUE,
+        label.size = 3,
+        repel = TRUE)
+dev.off()
+```
+![normal_labelled_epi.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_labelled_epi.png)
 
-# Assign UMAP coordinate - cell embeddings
+## Trajectories for normal epothelial cells
 
-cds@int_colData@listData$reducedDims$UMAP <- epi_seurat@reductions$umap@cell.embeddings
-
-# plot
-
-cluster.before.trajectory <- plot_cells(cds,
-           color_cells_by = 'cluster',
-           label_groups_by_cluster = FALSE,
-           group_label_size = 5) +
-  theme(legend.position = "right")
-  
-cluster.names <- plot_cells(cds,
-           color_cells_by = "SCT_snn_res.0.1",
-           label_groups_by_cluster = FALSE,
-           group_label_size = 5) +
-  scale_color_manual(values = c('red', 'blue', 'green', 'maroon', 'yellow', 'grey')) +
-  theme(legend.position = "right")
-
-cluster.before.trajectory | cluster.names
-
-# 3 Learn trajectory graph
-cds <- learn_graph(cds, use_partition = FALSE, verbose = T)
-
-plot_cells(cds,
-           color_cells_by = 'SCT_snn_res.0.1',
-           label_groups_by_cluster = FALSE,
-           label_branch_points = FALSE,
-           label_roots = FALSE,
-           label_leaves = FALSE,
-           group_label_size = 5)
-           
-# diffrentiated luminal cell are root cells           
-cds <- order_cells(cds, reduction_method = 'UMAP', root_cells = colnames(cds[,clusters(cds) == 2]))
+```r
+epi_seurat$clusters <- Idents(epi_seurat)
+png(filename = "normal_trajectory.png", width = 16, height = 8.135, units = "in", res = 300)
+epi_seurat <- RunSlingshot(srt = epi_seurat, group.by = "clusters", reduction = "UMAP")
+dev.off()
+```
+![normal_trajectory.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_trajectory.png)
