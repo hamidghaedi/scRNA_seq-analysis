@@ -2232,7 +2232,92 @@ DimPlot(object = epi_seurat,
         repel = TRUE)
 dev.off()
 ```
-## Pseudo balk RNA-seq data analysis and  pathwas enrichement analysis
+## DE and GSEA 
+
+```r
+library(SCP)
+
+# DE and Enrichement analysis
+
+#Differential expression analysis
+epi_seurat <- RunDEtest(srt = epi_seurat, group_by = "clusters", fc.threshold = 1.5, only.pos = FALSE)
+
+#
+png(filename = "vplcano_DE.png", width = 16, height = 8.135, units = "in", res = 300)
+VolcanoPlot(srt = epi_seurat, group_by = "clusters")
+dev.off()
+```
+![vplcano_DE.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/vplcano_DE.png)
+
+```r
+#
+DEGs <- epi_seurat@tools$DEtest_clusters$AllMarkers_wilcox
+DEGs <- DEGs[with(DEGs, avg_log2FC > 1.5 & p_val_adj < 0.05), ]
+# Annotate features with transcription factors and surface proteins
+#epi_seurat <- AnnotateFeatures(epi_seurat, species = "Homo_sapiens", db = c("TF", "SP"))
+
+# png(filename = "heatmap_DE.png", width = 16, height = 8.135, units = "in", res = 300)
+# ht <- FeatureHeatmap(
+#   srt = epi_seurat, group.by = "clusters", features = DEGs$gene, feature_split = DEGs$group1,
+#   species = "Homo_sapiens", db = c("GO_BP", "KEGG", "WikiPathway"), anno_terms = TRUE)
+# print(ht$plot)
+# dev.off()
+
+
+# Enrichment analysis
+## over -representation analysis
+
+epi_seurat <- RunEnrichment(
+  srt = epi_seurat, group_by = "clusters", db = "GO_BP", species = "Homo_sapiens",
+  DE_threshold = "avg_log2FC > 1 & p_val_adj < 0.05"
+)
+
+png(filename = "enrichment_1.png", width = 16, height = 8.135, units = "in", res = 300)
+EnrichmentPlot(
+  srt = epi_seurat, group_by = "clusters", group_use = c("basal_cell", "differentiated_luminal_cell"),
+  plot_type = "bar"
+)
+dev.off()
+```
+![enrichment_1.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/enrichment_1.png)
+
+```r
+png(filename = "enrichment_2.png", width = 16, height = 8.135, units = "in", res = 300)
+EnrichmentPlot(srt = epi_seurat, group_by = "clusters", plot_type = "comparison")
+dev.off()
+```
+![enrichment_2.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/enrichment_2.png)
+```r
+## Enrichment analysis(GSEA)
+epi_seurat <- RunGSEA(
+  srt = epi_seurat, group_by = "clusters", db = "GO_BP", species = "Homo_sapiens",
+  DE_threshold = "p_val_adj < 0.05"
+)
+
+png(filename = "enrichment_3.png", width = 16, height = 8.135, units = "in", res = 300)
+GSEAPlot(srt = epi_seurat, group_by = "clusters", plot_type = "comparison")
+dev.off()
+
+```
+![enrichment_3.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/enrichment_3.png)
+
+
+##Trajectory inference
+
+```r
+png(filename = "trajectory.png", width = 16, height = 8.135, units = "in", res = 300)
+epi_seurat <- RunSlingshot(srt = epi_seurat, group.by = "clusters", reduction = "UMAP")
+dev.off()
+
+```
+![trajectory.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/trajectory.png)
+
+```
+```r
+library(SCP)
+
+
+
 
 The approach is to consider each cluster as an individual sample and use sum of normalized expression for GSVA analysis
 
