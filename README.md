@@ -12,6 +12,7 @@ Contents:
 6) [Marker identification](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
 7) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
 8) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
+
  
 
 
@@ -2214,13 +2215,14 @@ epi_cluster_markers_10 <- epi_top10 %>%
                    group_by(cluster) %>% 
                    summarize(genes = paste(gene, collapse = ","))
 ```
-| cluster|genes  | cell type |                                                          |--------|--------|--------|     
+| cluster|genes  | cell type |
+|--------|-------|-----------|
 |0 |KRT15,KRT5,BCAM,IGFBP2,IGFBP7,CDH13,FOSL1,LAMB3,COL4A5,SERPINB5,SELENOP| basal cell|
 |1 |UCA1,LGALS1,CA9,SPINK1,GJB2,PTPRR,FCRLB,PLA2G2F,GJB6,FBLN1|cancer-associated luminal cells |              
-|2 |NDUFA4L2,CRH,UPK2,SNX31,KRT20,AC019117.2,UPK1B,LINC02163,H19,TESC|luminal differentiated cells|     
-|3 |LY6D,TNNT3,IGF2BP2,GMNN,SYT8,AC068587.4,ITM2C,SGPP2,ZNF750,TNFSF10|unique luminal cells       
-|4 |S100A9,C15orf48,MYO16,MMP7,MYEOV,AC025159.1,LTO1,IFI27,IRS2,SLPI|immunomodulatory luminal Cells       
-|5 |ALCAM,ATXN1,PCDH7,COBLL1,LIPH,TRIM31,NAALADL2,ITGA2,SERPINB5,ITGA6,TM4SF1| adhesion and signaling luminal cells
+|2 |NDUFA4L2,CRH,UPK2,SNX31,KRT20,AC019117.2,UPK1B,LINC02163,H19,TESC|luminal differentiated| cells|     
+|3 |LY6D,TNNT3,IGF2BP2,GMNN,SYT8,AC068587.4,ITM2C,SGPP2,ZNF750,TNFSF10|unique luminal cells|       
+|4 |S100A9,C15orf48,MYO16,MMP7,MYEOV,AC025159.1,LTO1,IFI27,IRS2,SLPI|immunomodulatory luminal| Cells       
+|5 |ALCAM,ATXN1,PCDH7,COBLL1,LIPH,TRIM31,NAALADL2,ITGA2,SERPINB5,ITGA6,TM4SF1| adhesion and signaling luminal cells|
 
 ```
 # Reading seurat object
