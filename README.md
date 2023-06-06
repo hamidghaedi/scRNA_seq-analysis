@@ -12,6 +12,8 @@ Contents:
 6) [Marker identification](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
 7) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
 8) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
+9) [DE and enrichment analysis]()
+10 [RNA velocity analysis]()
 
  
 
@@ -2328,7 +2330,7 @@ dev.off()
 ```
 ![trajectory.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/trajectory.png)
 
-## Exploring bladder normal mocusa samples
+## Exploring normal bladder mocusa samples
 
 ```r
 #________________________Reading the files______________________#
@@ -2587,7 +2589,7 @@ dev.off()
 ```
 ![normal_labelled_epi.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_labelled_epi.png)
 
-## Trajectories for normal epothelial cells
+## Trajectories of normal epothelial cells
 
 ```r
 epi_seurat$clusters <- Idents(epi_seurat)
@@ -2596,3 +2598,154 @@ epi_seurat <- RunSlingshot(srt = epi_seurat, group.by = "clusters", reduction = 
 dev.off()
 ```
 ![normal_trajectory.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_trajectory.png)
+
+
+# RNA velocity analysis
+
+Single-cell RNA velocity analysis is a powerful computational method that provides insights into the future states of individual cells by leveraging the dynamics of gene expression. By combining information from spliced and unspliced mRNA molecules, scRNA velocity analysis can infer the direction and speed of cell state transitions, shedding light on developmental trajectories, cell fate decisions, and disease progression. This approach allows researchers to identify key driver genes and regulatory networks that influence cellular dynamics, offering a deeper understanding of cellular behavior and heterogeneity at the single-cell level. With its ability to predict cellular trajectories, scRNA velocity analysis holds great promise for unraveling complex biological processes and advancing our understanding of various biological systems.
+
+The datasets that I am using for this part of analysis were prepared based on the code avaialble in another repo [scRNA velocity analysis](https://github.com/hamidghaedi/scRNA_velocity_analysis).
+A notebook for the following analysis available in the repo (`scvelo.ipynb`).
+
+```python
+#import libs
+import os
+import scvelo as scv
+import pandas as pd
+import scanpy as sc
+import matplotlib.pyplot as plt
+import statsmodels.graphics.mosaicplot as mplt
+#import pyreader
+
+```
+```python
+scv.settings.verbosity = 3  # show errors(0), warnings(1), info(2), hints(3)
+scv.settings.presenter_view = True  # set max width size for presenter view
+scv.settings.set_figure_params('scvelo')  # for beautified visualization
+```
+
+### SRR12603783 HG MIBC
+```python
+
+# reading file
+adata = scv.read("SRR12603783.h5ad")
+adata
+#AnnData object with n_obs × n_vars = 6545 × 36601
+#    obs: 'orig.ident', 'nCount_spliced', 'nFeature_spliced', 'nCount_unspliced', #'nFeature_unspliced', 'nCount_ambiguous', 'nFeature_ambiguous', 'cells', 'gender', 'age', #'Grade', 'Invasiveness', 'clusters', 'nCount_RNA', 'nFeature_RNA', 'nCount_SCT', 'nFeature_SCT', #'SCT_snn_res.0.1', 'SCT_snn_res.0.2', 'SCT_snn_res.0.4', 'SCT_snn_res.0.6', 'SCT_snn_res.0.8', #'seurat_clusters', 'epi_cluster'
+#    var: 'features', 'ambiguous_features', 'spliced_features', 'unspliced_features'
+#    obsm: 'X_umap'
+#    layers: 'ambiguous', 'spliced', 'unspliced'
+
+# count cells per clusters
+adata.obs.clusters.value_counts()
+#1    2626
+#4    2127
+#0     795
+#2     703
+#5     152
+#3     142
+#Name: clusters, dtype: int64
+
+
+# Define a dictionary mapping the numbers to labels
+label_mapping = {
+    0: 'basal_cell',
+    1: 'cancer_associated_luminal_cell',
+    2: 'differentiated_luminal_cell',
+    3: 'unique_luminal_cell',
+    4: 'immunomodulatory_luminal_cell',
+    5: 'adhesion_signaling_luminal_cell'
+}
+# Replace the numbers with their corresponding labels and convert type to categorical
+adata.obs['clusters'] =adata.obs['clusters'].replace(label_mapping)
+adata.obs['clusters'] = adata.obs['clusters'].astype('category')
+
+# visualizing basic feature of dataset
+scv.pl.proportions(adata, figsize=(18,2), save= 'basic_features_SRR12603783.png')
+```
+![basic_features_SRR12603783.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/basic_features_SRR12603783.png)
+
+
+### Basic preprocessing
+First basic preprocessing (gene selection and normalization), then we compute the first- and second-order moments (means and uncentered variances) for velocity estimation:
+
+```python
+scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
+# Filtered out 31130 genes that are detected 20 counts (shared).
+# Normalized count data: X, spliced, unspliced.
+# Extracted 2000 highly variable genes.
+# Logarithmized X.
+scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
+# computing neighbors
+#     finished (0:00:07) --> added 
+#     'distances' and 'connectivities', weighted adjacency matrices (adata.obsp)
+# computing moments based on connectivities
+#     finished (0:00:01) --> added 
+#     'Ms' and 'Mu', moments of un/spliced abundances (adata.layers)
+```
+
+### Velocity Tools _ dynamic model
+The core of the software is the efficient and robust estimation of velocities, obtained with:
+```python
+scv.tl.recover_dynamics(adata)
+scv.tl.velocity(adata, mode='dynamical')
+scv.tl.velocity_graph(adata)
+#recovering dynamics (using 1/16 cores)
+#Error displaying widget: model not found
+#    finished (0:02:02) --> added 
+#    'fit_pars', fitted parameters for splicing dynamics (adata.var)
+#computing velocities
+#    finished (0:00:01) --> added 
+#    'velocity', velocity vectors for each individual cell (adata.layers)
+#computing velocity graph (using 1/16 cores)
+#Error displaying widget: model not found
+#    finished (0:00:09) --> added 
+#    'velocity_graph', sparse matrix with cosine correlations (adata.uns)
+
+
+# Visualization
+scv.pl.velocity_embedding_stream(adata, basis="umap", color="SCT_snn_res.0.4", title= 'SRR12603783 [HG, MIBC]', save= 'srr12603783_velocity_stream.png')
+```
+![srr12603783_velocity_stream.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_velocity_stream.png)
+
+There are data for clustering with different resolution in the dataset, the reason why I choose 0.4  is that,  in this resolution I can see that cells in the same cluster in the main  clusters are grouped together but in different new clusters. 
+
+```python
+data = pd.crosstab(adata.obs['clusters'], adata.obs['SCT_snn_res.0.4']).transpose()
+# Plot the stacked bar chart
+plt.figure(figsize=(10, 6))
+data.plot(kind='bar', stacked=True)
+plt.xlabel('sample-specefic clsuters')
+plt.ylabel('Counts')
+plt.title('')
+plt.legend(loc='upper right')
+# Save the plot as an image file
+plt.savefig('./figures/srr12603783_frequency_sample_clsuter_in_cell_clusters.png')
+
+plt.show()
+
+```
+![srr12603783_frequency_sample_clsuter_in_cell_clusters.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_frequency_sample_clsuter_in_cell_clusters.png)
+
+The most fine-grained resolution of the velocity vector field we get at single-cell level, with each arrow showing the direction and speed of movement of an individual cell.
+
+```python
+scv.pl.velocity_embedding(adata, basis="umap", color="seurat_clusters", arrow_length=3, arrow_size=2, dpi=120, title= 'SRR12603783 [HG, MIBC]', save= 'srr12603783_velocity_embedding.png')
+```
+![srr12603783_velocity_embedding.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_velocity_embedding.png)
+
+### Latent time and top genes
+
+```python
+scv.tl.latent_time(adata)
+scv.pl.scatter(adata, color='latent_time', color_map='gnuplot', size=80, save= "srr12603783_latent_time.png")
+```
+!["srr12603783_latent_time.png"](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_latent_time.png)
+
+Top genes based on the kinetics rate parameters(transcription rate, splicing rate, degradation rate, pseudo time and ...) :
+
+```python
+top_genes = adata.var['fit_likelihood'].sort_values(ascending=False).index[:300]
+scv.pl.heatmap(adata, var_names=top_genes, sortby='latent_time', col_color="SCT_snn_res.0.4", n_convolve=100 ,colorbar=True, save= "srr12603783_top_genes_kinetic_parameters.png")
+```
+![srr12603783_top_genes_kinetic_parameters.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_top_genes_kinetic_parameters.png)
