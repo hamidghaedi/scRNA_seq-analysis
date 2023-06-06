@@ -12,8 +12,11 @@ Contents:
 6) [Marker identification](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
 7) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
 8) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
-9) [DE and enrichment analysis]()
-10 [RNA velocity analysis]()
+9) [DE and enrichment analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#de-and-gsea)
+
+10) [Trajectory inference](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
+
+11 [RNA velocity analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
 
  
 
@@ -2663,7 +2666,7 @@ adata.obs['clusters'] = adata.obs['clusters'].astype('category')
 # visualizing basic feature of dataset
 scv.pl.proportions(adata, figsize=(18,2), save= 'basic_features_SRR12603783.png')
 ```
-![basic_features_SRR12603783.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/basic_features_SRR12603783.png)
+![basic_features_SRR12603783.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/scvelo_proportions_basic_features_SRR12603783.png)
 
 
 ### Basic preprocessing
@@ -2706,7 +2709,7 @@ scv.tl.velocity_graph(adata)
 # Visualization
 scv.pl.velocity_embedding_stream(adata, basis="umap", color="SCT_snn_res.0.4", title= 'SRR12603783 [HG, MIBC]', save= 'srr12603783_velocity_stream.png')
 ```
-![srr12603783_velocity_stream.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_velocity_stream.png)
+![srr12603783_velocity_stream.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/scvelo_srr12603783_velocity_stream.png)
 
 There are data for clustering with different resolution in the dataset, the reason why I choose 0.4  is that,  in this resolution I can see that cells in the same cluster in the main  clusters are grouped together but in different new clusters. 
 
@@ -2732,7 +2735,7 @@ The most fine-grained resolution of the velocity vector field we get at single-c
 ```python
 scv.pl.velocity_embedding(adata, basis="umap", color="seurat_clusters", arrow_length=3, arrow_size=2, dpi=120, title= 'SRR12603783 [HG, MIBC]', save= 'srr12603783_velocity_embedding.png')
 ```
-![srr12603783_velocity_embedding.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_velocity_embedding.png)
+![srr12603783_velocity_embedding.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/scvelo_srr12603783_velocity_embedding.png)
 
 ### Latent time and top genes
 
@@ -2740,7 +2743,7 @@ scv.pl.velocity_embedding(adata, basis="umap", color="seurat_clusters", arrow_le
 scv.tl.latent_time(adata)
 scv.pl.scatter(adata, color='latent_time', color_map='gnuplot', size=80, save= "srr12603783_latent_time.png")
 ```
-!["srr12603783_latent_time.png"](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_latent_time.png)
+!["srr12603783_latent_time.png"](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/scvelo_srr12603783_latent_time.png)
 
 Top genes based on the kinetics rate parameters(transcription rate, splicing rate, degradation rate, pseudo time and ...) :
 
@@ -2748,4 +2751,6 @@ Top genes based on the kinetics rate parameters(transcription rate, splicing rat
 top_genes = adata.var['fit_likelihood'].sort_values(ascending=False).index[:300]
 scv.pl.heatmap(adata, var_names=top_genes, sortby='latent_time', col_color="SCT_snn_res.0.4", n_convolve=100 ,colorbar=True, save= "srr12603783_top_genes_kinetic_parameters.png")
 ```
-![srr12603783_top_genes_kinetic_parameters.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/srr12603783_top_genes_kinetic_parameters.png)
+![srr12603783_top_genes_kinetic_parameters.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/scvelo_heatmap_srr12603783_top_genes_kinetic_parameters.png)
+
+
