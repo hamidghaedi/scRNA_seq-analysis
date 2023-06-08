@@ -16,7 +16,7 @@ Contents:
 
 10) [Trajectory inference](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
 
-11 [RNA velocity analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
+11) [RNA velocity analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
 
  
 
@@ -2220,7 +2220,7 @@ epi_cluster_markers_10 <- epi_top10 %>%
                    group_by(cluster) %>% 
                    summarize(genes = paste(gene, collapse = ","))
 ```
-| cluster|genes  | cell type |
+| cluster|genes  | cell_type (PanglaoDB + ChatGPT) |
 |--------|-------|-----------|
 |0 |KRT15,KRT5,BCAM,IGFBP2,IGFBP7,CDH13,FOSL1,LAMB3,COL4A5,SERPINB5,SELENOP| basal cell|
 |1 |UCA1,LGALS1,CA9,SPINK1,GJB2,PTPRR,FCRLB,PLA2G2F,GJB6,FBLN1|cancer-associated luminal cells |              
@@ -2251,6 +2251,71 @@ DimPlot(object = epi_seurat,
         repel = TRUE)
 dev.off()
 ```
+
+**cluster 5** can benefit from re-clustering. It is consisted of several patches of cells. If we increase the clustering resolution we should get the each patches as a cluster. 
+
+```r
+Idents(epi_surat) <- epi_surat$SCT_snn_res.0.2
+png(filename = "cluster_epi_harmony_UMAP_ptsize_1_res0.2.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(epi_surat,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
+```
+![]()
+So based on the above graph,cells in cluster 5 are now clustered in 8,9,11 and 12. The current cluster 8 can be split into more clusters.
+ 
+```r
+Idents(epi_surat) <- epi_surat$SCT_snn_res.0.6
+png(filename = "cluster_epi_harmony_UMAP_ptsize_1_res0.6.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(epi_surat,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
+```
+Using the above resolution we can get two different cluster of cells for cluster 8. Now lets generate a customized `Ident` for the data set:
+
+```r
+idt <- epi_surat@meta.data[, c(14,15,17)]
+# convert to character
+idt <- data.frame(apply(idt, 2, as.character))
+# to see what to do:
+# table(epi_surat$SCT_snn_res.0.2, epi_surat$SCT_snn_res.0.6)
+
+# Replacing values for clsuter 8 with cluster 18 and 19 in res 0.6
+idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "15"] <- "8_a"
+idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "1"] <- "8_a"
+idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "2"] <- "8_a"
+idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "16"] <- "8_b"
+idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "18"] <- "8_b"
+idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "19"] <- "8_b"
+
+# Updating SCT_snn_res.0.1 
+# to see what to do:
+# table(idt$SCT_snn_res.0.1, idt$SCT_snn_res.0.2)
+
+idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "9"] <- "5_a"
+idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "8_a"] <- "5_b"
+idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "3"] <- "5_b"
+idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "4"] <- "5_b"
+idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "6"] <- "5_a"
+idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "8_b"] <- "5_c"
+idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "11"] <- "5_d"
+idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "12"] <- "5_e"
+# adding new idents to seurat obj
+epi_surat$new_idents <- idt$SCT_snn_res.0.1
+# setting ident for plotting
+Idents(epi_surat) <- epi_surat$new_idents
+# plotting
+png(filename = "cluster_epi_harmony_UMAP_new_idents.png", width = 16, height = 8.135, units = "in", res = 300)
+DimPlot(epi_surat,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+dev.off()
+
 ## DE and GSEA 
 
 ```r
@@ -2313,6 +2378,20 @@ epi_seurat <- RunGSEA(
   DE_threshold = "p_val_adj < 0.05"
 )
 
+# plotting for hypoxia
+png(filename = "enrichment_4.png", width = 16, height = 8.135, units = "in", res = 300)
+GSEAPlot(srt = epi_seurat, group_by = "clusters", group_use = "differentiated_luminal_cell", geneSetID = "GO:0001666")
+dev.off()
+
+png(filename = "enrichment_5.png", width = 16, height = 8.135, units = "in", res = 300)
+GSEAPlot(srt = epi_seurat, group_by = "clusters", group_use = "cancer_associated_luminal_cell", geneSetID = "GO:0001666")
+dev.off()
+
+png(filename = "enrichment_6.png", width = 16, height = 8.135, units = "in", res = 300)
+GSEAPlot(srt = epi_seurat, group_by = "clusters", group_use = "basal_cell", geneSetID = "GO:0001666")
+dev.off()
+
+# comparison plot
 png(filename = "enrichment_3.png", width = 16, height = 8.135, units = "in", res = 300)
 GSEAPlot(srt = epi_seurat, group_by = "clusters", plot_type = "comparison")
 dev.off()
