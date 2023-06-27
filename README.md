@@ -7,16 +7,17 @@ Contents:
 1) [Data download on ComputeCanada](https://github.com/hamidghaedi/scRNA_seq-analysis#1-data-download-on-computecanada)
 2) [Generating feature-sample expression matrix](https://github.com/hamidghaedi/scRNA_seq-analysis#2-generating-feature-sample-expression-matrix)
 3) [Loading single-cell RNA-seq count data](https://github.com/hamidghaedi/scRNA_seq-analysis#3-loading-single-cell-rna-seq-count-data)
-4) [Quality control](https://github.com/hamidghaedi/scRNA_seq-analysis#4-quality-control)
-5) [Normalization, regressing out unwanted variation and clustering](https://github.com/hamidghaedi/scRNA_seq-analysis#5-normalization-regressing-out-unwanted-variation-and-clustering)
-6) [Marker identification](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
-7) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
-8) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
-9) [DE and enrichment analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#de-and-gsea)
+4) [Background noise removal](https://github.com/hamidghaedi/scRNA_seq-analysis#4-Background-noise-removal)
+5) [Quality control](https://github.com/hamidghaedi/scRNA_seq-analysis#5-quality-control)
+6) [Normalization, regressing out unwanted variation and clustering](https://github.com/hamidghaedi/scRNA_seq-analysis#6-normalization-regressing-out-unwanted-variation-and-clustering)
+7) [Marker identification](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
+8) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
+9) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
+10) [DE and enrichment analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#de-and-gsea)
 
-10) [Trajectory inference](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
+11) [Trajectory inference](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
 
-11) [RNA velocity analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
+12) [RNA velocity analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
 
  
 
@@ -192,8 +193,78 @@ merged_seurat <- merge(x = SRR12603780,
                        # to each of our cell IDs using the add.cell.id argument.
                        add.cell.id = samples)
 ```
+## 4) Background noise removal
 
-## 4) Quality control
+Background removal is crucial in single-cell RNA sequencing (scRNA-seq) analysis due to the presence of contaminants such as cell-free "ambient" RNA and chimeric cDNA molecules resulting from barcode swapping.
+Barcode swapping can happen when cDNA molecules from different beads, which carry different barcodes, mix together during the amplification step. This can occur due to unremoved oligonucleotides from other beads or incomplete extension of PCR products. As a result, chimeric cDNA molecules are formed, where the barcode and UMI sequences are "swapped" between different beads. When these chimeric molecules are sequenced, the assigned barcode does not match the original bead, leading to incorrect assignment of the cDNA to the corresponding cell.
+
+These contaminants contribute to background noise, which can negatively impact data analysis. Background noise reduces the separability of cell type clusters, interferes with differential expression analysis, and confounds comparisons between samples. To address this, algorithms like SoupX, DecontX, and CellBender estimate and correct for background noise using marker genes, empty droplets, and modeling of barcode swapping. Evaluating method performance involves assessing if the model effectively removes expression from other cell types using datasets with known cell type profiles and exclusive marker genes. However, the impact of background correction on expression level shifts induced by background noise remains a challenge in scRNA-seq analysis.
+
+As recommended by [Philipp Janssen et al,2023](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-023-02978-x):
+
+`In summary, for marker gene analysis, we would always recommend background removal, but for classification, clustering and pseudotime analyses, we would only recommend background removal when background noise levels are high`
+In this repo, I wont be using the cellbender filtered matrix, as the main focus of the analysis is cell clustering, rather than marker identification.The following is fully functional code for the given samples
+
+``` shell
+# Running cellbender image on co pute canada 
+##pulling the image (creating sif file):
+module load apptainer
+apptainer pull cellbender.sif docker://us.gcr.io/broad-dsde-methods/cellbender:0.2.2
+```
+Sbatch script to run cellbender on Graham with GPU
+
+```shell
+#!/bin/bash
+#SBATCH --account=def-gooding-ab
+#SBATCH --job-name=cellBender
+#SBATCH --nodes=1                # number of Nodes
+#SBATCH --gpus-per-node=p100:2
+#SBATCH --ntasks-per-node=32       
+#SBATCH --mem=127000M
+#SBATCH --time 08:00:00
+#SBATCH --output=cellBender.%J.out
+#SBATCH --error=cellBender.%J.err
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=qaedi.65@gmail.com
+
+module load apptainer
+
+# Define the input and output directories
+input_dir="/home/ghaedi/projects/def-gooding-ab/ghaedi/sc/filtered"
+output_dir="/home/ghaedi/projects/def-gooding-ab/ghaedi/sc/cellBender_filtered"
+
+# Iterate over the sample directories
+for sample_dir in "$input_dir"/*; do
+    if [[ -d "$sample_dir" ]]; then
+        sample_name=$(basename "$sample_dir")
+        echo "Processing sample: $sample_name"
+
+        # Create a directory for the current sample within the output directory
+        sample_output_dir="$output_dir/$sample_name"
+        mkdir -p "$sample_output_dir"
+
+        # Run cellbender remove-background command for the current sample
+        apptainer run -C -W ${SLURM_TMPDIR} --nv --rocm \
+        --bind "$input_dir":"/mnt/filtered" \
+        --bind "$sample_output_dir":"/mnt/sample_output" cellbender.sif \
+        cellbender remove-background \
+        --input "/mnt/filtered/$sample_name" \
+        --output "/mnt/sample_output/$sample_name.h5" \
+        --expected-cells 7000 \
+        --total-droplets-included 20000 \
+        --fpr 0.01 \
+        --epochs 150 \
+        --cuda
+
+        echo "Completed processing sample: $sample_name"
+        echo
+    fi
+done
+```
+
+
+
+## 5) Quality control
 
 There are columns in the metadata:
 
@@ -461,7 +532,7 @@ metadata_clean %>%
 ```
 ![nUMI_nGene_mitoRatio_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/nUMI_nGene_mitoRatio_after.png)
 
-## 5) Normalization, regressing out unwanted variation and clustering
+## 6) Normalization, regressing out unwanted variation and clustering
 
 The ultimate goal is to define clusters of cells and identify cell types in the samples. To achieve this, there are several steps:
 
