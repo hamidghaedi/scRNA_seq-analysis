@@ -85,11 +85,8 @@ It is always recomended to run QC on samples; so uisng the following code we can
 
 module load fastqc
 
-for f in ./fastq/*.fastq.gz
-do
- echo $f
- fastqc $f --outdir ./qc_raw  --thread 12 --nogroup
-done
+fastqc ./fastq/*.fastq.gz --outdir ./qc_raw -f fastq -t 12 --nogroup
+
 ```
 
 There are diffrences between sequence length of read 1 and read 2 for each samples; read 1 provides data on Cell barcode & UMI and read 2 has the insert sequence. Files coming from SRA usually come with names like something_1\_fastq.gz and something_2\_fastq.gz . This [blog](https://kb.10xgenomics.com/hc/en-us/articles/115003802691) is helpful to see what are the naming requirements of fastq files for cellranger tool. Briefly;
