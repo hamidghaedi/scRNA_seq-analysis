@@ -2384,6 +2384,7 @@ DimPlot(epi_surat,
         label.size = 6)
 dev.off()
 ```
+![cluster_epi_harmony_UMAP_new_idents.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cluster_epi_harmony_UMAP_new_idents.png)
 
 ## DE and GSEA 
 
