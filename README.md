@@ -2044,7 +2044,7 @@ FeaturePlot(object = harmonized_seurat,
 
 dev.off()
 ```
-![umap_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/tsne_superCluster_cells.png)
+![umap_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_superCluster_cells.png)
 
 
 
@@ -2323,9 +2323,9 @@ dev.off()
 **cluster 5** can benefit from re-clustering. It is consisted of several patches of cells. If we increase the clustering resolution we should get the each patches as a cluster. 
 
 ```r
-Idents(epi_surat) <- epi_surat$SCT_snn_res.0.2
+Idents(epi_seurat) <- epi_seurat$SCT_snn_res.0.2
 png(filename = "cluster_epi_harmony_UMAP_ptsize_1_res0.2.png", width = 16, height = 8.135, units = "in", res = 300)
-DimPlot(epi_surat,
+DimPlot(epi_seurat,
         reduction = "umap",
         label = TRUE,
         label.size = 6)
@@ -2335,9 +2335,9 @@ dev.off()
 So based on the above graph,cells in cluster 5 are now clustered in 8,9,11 and 12. The current cluster 8 can be split into more clusters.
  
 ```r
-Idents(epi_surat) <- epi_surat$SCT_snn_res.0.6
+Idents(epi_seurat) <- epi_seurat$SCT_snn_res.0.6
 png(filename = "cluster_epi_harmony_UMAP_ptsize_1_res0.6.png", width = 16, height = 8.135, units = "in", res = 300)
-DimPlot(epi_surat,
+DimPlot(epi_seurat,
         reduction = "umap",
         label = TRUE,
         label.size = 6)
@@ -2346,11 +2346,11 @@ dev.off()
 Using the above resolution we can get two different cluster of cells for cluster 8. Now lets generate a customized `Ident` for the data set:
 
 ```r
-idt <- epi_surat@meta.data[, c(14,15,17)]
+idt <- epi_seurat@meta.data[, c(14,15,17)]
 # convert to character
 idt <- data.frame(apply(idt, 2, as.character))
 # to see what to do:
-# table(epi_surat$SCT_snn_res.0.2, epi_surat$SCT_snn_res.0.6)
+# table(epi_seurat$SCT_snn_res.0.2, epi_seurat$SCT_snn_res.0.6)
 
 # Replacing values for clsuter 8 with cluster 18 and 19 in res 0.6
 idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "15"] <- "8_a"
@@ -2373,12 +2373,12 @@ idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "8_b"] <- "5_c"
 idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "11"] <- "5_d"
 idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "12"] <- "5_e"
 # adding new idents to seurat obj
-epi_surat$new_idents <- idt$SCT_snn_res.0.1
+epi_seurat$new_idents <- idt$SCT_snn_res.0.1
 # setting ident for plotting
-Idents(epi_surat) <- epi_surat$new_idents
+Idents(epi_seurat) <- epi_seurat$new_idents
 # plotting
 png(filename = "cluster_epi_harmony_UMAP_new_idents.png", width = 16, height = 8.135, units = "in", res = 300)
-DimPlot(epi_surat,
+DimPlot(epi_seurat,
         reduction = "umap",
         label = TRUE,
         label.size = 6)
@@ -2391,9 +2391,12 @@ dev.off()
 ```r
 library(SCP)
 
+
 # DE and Enrichement analysis
 
-#Differential expression analysis
+#Differential expression analysis; this takes a while, to upload the object contains DE result:
+epi_seurat <- readRDS("updated_epi_seurat.RDS")
+
 epi_seurat <- RunDEtest(srt = epi_seurat, group_by = "clusters", fc.threshold = 1.5, only.pos = FALSE)
 
 #
