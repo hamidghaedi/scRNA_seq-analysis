@@ -143,7 +143,7 @@ ID=${d:0:11}
 cellranger count --id=$ID \
                  --transcriptome=/home/ghaedi/projects/def-gooding-ab/ghaedi/sc/refdata-gex-GRCh38-2020-A \
                  --fastqs=$d
-                 --chemistry=SC3Pv2
+                 --chemistry=SC3Pv3
 done
 ```
 
