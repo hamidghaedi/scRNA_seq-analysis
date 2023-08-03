@@ -2,12 +2,16 @@
 
 This repo presents steps needed to make sense of single cell RNA sequencing (scRNA) data. I used a scRNA dataset coming from Zhaohui Chen *et al.* [paper](https://www.nature.com/articles/s41467-020-18916-5#Sec12) published in Nature Communications 11, Article number: 5077 (2020). The cohort consisted of eight primary bladder tumor tissues (2 low-grade bladder urothelial tumors, six high-grade bladder urothelial tumors) along with 3 adjacent normal mucosae. In SRA datasets are under BioProject [PRJNA662018](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA662018) and SRA-explorer can be used to download the data. For practical scRNA-seq analysis I followed this elegant [tutorial](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) from Harvard Chan Bioinformatics Core. 
 
+**NOTE** If you like to work with `cellranger count` outputs and start analysis using `Seurat` you can download them from this [link](https://figshare.com/articles/dataset/filtered_zip/23834670). 
+
+
+
 Contents:
 
 1) [Data download on ComputeCanada](https://github.com/hamidghaedi/scRNA_seq-analysis#1-data-download-on-computecanada)
 2) [Generating feature-sample expression matrix](https://github.com/hamidghaedi/scRNA_seq-analysis#2-generating-feature-sample-expression-matrix)
-3) [Loading single-cell RNA-seq count data](https://github.com/hamidghaedi/scRNA_seq-analysis#3-loading-single-cell-rna-seq-count-data)
-4) [Background noise removal](https://github.com/hamidghaedi/scRNA_seq-analysis#4-Background-noise-removal)
+3) [Background noise removal](https://github.com/hamidghaedi/scRNA_seq-analysis#4-Background-noise-removal)
+4) [Loading single-cell RNA-seq count data](https://github.com/hamidghaedi/scRNA_seq-analysis#3-loading-single-cell-rna-seq-count-data)
 5) [Quality control](https://github.com/hamidghaedi/scRNA_seq-analysis#5-quality-control)
 6) [Normalization, regressing out unwanted variation and clustering](https://github.com/hamidghaedi/scRNA_seq-analysis#6-normalization-regressing-out-unwanted-variation-and-clustering)
 7) [Marker identification](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
@@ -149,48 +153,8 @@ done
 
 The next steps are mainly based on Harvard Chan Bioinformatics Core materials on [scRNA-seq analysis](https://hbctraining.github.io/scRNA-seq_online/schedule/links-to-lessons.html) training.
 
-## 3) Loading single-cell RNA-seq count data
 
-``` r
-# Setup the Seurat Object
-
-library(tidyverse)
-library(Seurat)
-library(patchwork)
-library(cowplot)
-
-# create list of samples
-samples <- list.files("~/scRNA/filtered/")
-#samples <- samples[grepl('^filtered',samples,perl=T)]
-
-# read files inot Seurat objects
-for (file in samples){
-  print(paste0(file))
-  seurat_data <- Read10X(data.dir = paste0("~/scRNA/filtered/", file))
-  seurat_obj <- CreateSeuratObject(counts = seurat_data, 
-                                   min.features = 100, 
-                                   project = file)
-  assign(file, seurat_obj)
-}
-
-# now merging all objects inot one Seurat obj
-
-merged_seurat <- merge(x = SRR12603780, 
-                       y = c(SRR12603781,
-                             SRR12603782,
-                             SRR12603783,
-                             SRR12603784,
-                             SRR12603785,
-                             SRR12603786,
-                             SRR12603787,
-                             SRR12603788,
-                             SRR12603789,
-                             SRR12603790),
-                       #Because the same cell IDs can be used for different samples, we add a sample-specific prefix 
-                       # to each of our cell IDs using the add.cell.id argument.
-                       add.cell.id = samples)
-```
-## 4) Background noise removal
+## 3) Background noise removal
 
 Background removal is crucial in single-cell RNA sequencing (scRNA-seq) analysis due to the presence of contaminants such as cell-free "ambient" RNA and chimeric cDNA molecules resulting from barcode swapping.
 Barcode swapping can happen when cDNA molecules from different beads, which carry different barcodes, mix together during the amplification step. This can occur due to unremoved oligonucleotides from other beads or incomplete extension of PCR products. As a result, chimeric cDNA molecules are formed, where the barcode and UMI sequences are "swapped" between different beads. When these chimeric molecules are sequenced, the assigned barcode does not match the original bead, leading to incorrect assignment of the cDNA to the corresponding cell.
@@ -200,7 +164,8 @@ These contaminants contribute to background noise, which can negatively impact d
 As recommended by [Philipp Janssen et al,2023](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-023-02978-x):
 
 `In summary, for marker gene analysis, we would always recommend background removal, but for classification, clustering and pseudotime analyses, we would only recommend background removal when background noise levels are high`
-In this repo, I wont be using the cellbender filtered matrix, as the main focus of the analysis is cell clustering, rather than marker identification.The following is fully functional code for the given samples
+
+In this repo, I wont be using the cellbender filtered matrix, as the main focus of the analysis is cell clustering, rather than marker identification.The following is fully functional cellbender code for the given samples
 
 ``` shell
 # Running cellbender image on co pute canada 
@@ -260,7 +225,47 @@ done
 ```
 
 
+## 4) Loading single-cell RNA-seq count data
 
+``` r
+# Setup the Seurat Object
+
+library(tidyverse)
+library(Seurat)
+library(patchwork)
+library(cowplot)
+
+# create list of samples
+samples <- list.files("~/scRNA/filtered/")
+#samples <- samples[grepl('^filtered',samples,perl=T)]
+
+# read files inot Seurat objects
+for (file in samples){
+  print(paste0(file))
+  seurat_data <- Read10X(data.dir = paste0("~/scRNA/filtered/", file))
+  seurat_obj <- CreateSeuratObject(counts = seurat_data, 
+                                   min.features = 100, 
+                                   project = file)
+  assign(file, seurat_obj)
+}
+
+# now merging all objects inot one Seurat obj
+
+merged_seurat <- merge(x = SRR12603780, 
+                       y = c(SRR12603781,
+                             SRR12603782,
+                             SRR12603783,
+                             SRR12603784,
+                             SRR12603785,
+                             SRR12603786,
+                             SRR12603787,
+                             SRR12603788,
+                             SRR12603789,
+                             SRR12603790),
+                       #Because the same cell IDs can be used for different samples, we add a sample-specific prefix 
+                       # to each of our cell IDs using the add.cell.id argument.
+                       add.cell.id = samples)
+```
 ## 5) Quality control
 
 There are columns in the metadata:
