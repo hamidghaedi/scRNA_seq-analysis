@@ -147,7 +147,7 @@ ID=${d:0:11}
 cellranger count --id=$ID \
                  --transcriptome=/home/ghaedi/projects/def-gooding-ab/ghaedi/sc/refdata-gex-GRCh38-2020-A \
                  --fastqs=$d
-                 --chemistry=SC3Pv2
+                 --chemistry=SC3Pv3
 done
 ```
 
@@ -2489,6 +2489,56 @@ dev.off()
 
 ```
 ![trajectory.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/trajectory.png)
+
+### Identify temporally dynamic genes
+After running slingshot, I am going to explore gene expression changes during development. I aim to discover genes that undergo significant expression shifts. The method involves fitting a General Additive Model (GAM) for each gene, employing a negative binomial noise distribution to capture potential nonlinear connections between gene expression and pseudotime. Then conduct association tests to unveil meaningful links between expression and pseudotime. 
+
+```r
+library(slingshot)
+library(tradeSeq)
+library(RColorBrewer)
+
+# convert Seurat to sce
+sce <- as.SingleCellExperiment(epi_seurat)
+# Running slingshot
+sce <- slingshot(sce, clusterLabels = 'clusters', reducedDim = 'UMAP')
+
+## The following analysis is computationally intensive; so only a subset of genes will be passed to the function
+# Gene filteration: filter out genes with lower than 5 reads expressed in < 500 cells
+geneFilter <- apply(assays(sce)$counts,1,function(x){
+  sum(x >= 5) >= 500
+})
+tdg <- rownames(sce[geneFilter, ])
+
+# Variable feature
+vf <- VariableFeatures(epi_seurat)
+# combining the genes
+selected_feature <- tdg[tdg %in% vf]
+## Using tradeSeq package
+# Number of knot determined by ....
+icMat <- evaluateK(counts = sce, sds = crv, k = 3:7, nGenes = 50,
+                   verbose = TRUE, plot = TRUE)
+# 5 seems to be the right number for knot
+
+# fit negative binomial GAM
+tradeseq_res <- fitGAM(counts = cse, nknots = 5, genes = selected_feature, verbose = TRUE)
+# test for dynamic expression
+ATres <- associationTest(tradeseq_res)
+
+# visualizing heat map
+pst.ord <- order(sce$slingPseudotime_1, na.last = NA)
+heatdata <- as.matrix(assays(sce)$counts[topgenes, pst.ord])
+heatclus <- sce$clusters[pst.ord]
+
+png("tdg.png", width=10, height = 10, unit = "in", res = 300)
+heatmap(log1p(heatdata), Colv = NA,
+        ColSideColors = brewer.pal(9,"Set1")[heatclus])
+dev.off()
+```
+![tdg.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/tdg.png)
+
+
+
 
 ## Exploring normal bladder mocusa samples
 
