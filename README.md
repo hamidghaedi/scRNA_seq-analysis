@@ -21,7 +21,7 @@ Contents:
 
 11) [Trajectory inference](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
 
-12) RNA velocity analysis. Materials realted to RNA velocity analysis have been moved [here](https://github.com/hamidghaedi/scRNA_velocity_analysis)
+12) RNA velocity analysis. Materials related to RNA velocity analysis have  moved [here](https://github.com/hamidghaedi/scRNA_velocity_analysis)
 
  
 
