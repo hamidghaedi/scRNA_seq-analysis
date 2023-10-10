@@ -14,7 +14,7 @@ Contents:
 4) [Loading single-cell RNA-seq count data](https://github.com/hamidghaedi/scRNA_seq-analysis#3-loading-single-cell-rna-seq-count-data)
 5) [Quality control](https://github.com/hamidghaedi/scRNA_seq-analysis#5-quality-control)
 6) [Normalization, regressing out unwanted variation and clustering](https://github.com/hamidghaedi/scRNA_seq-analysis#6-normalization-regressing-out-unwanted-variation-and-clustering)
-7) [Marker identification](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
+7) [Marker identification and cell type assignment](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
 8) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
 9) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
 10) [DE and enrichment analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#de-and-gsea)
@@ -157,9 +157,9 @@ The next steps are mainly based on Harvard Chan Bioinformatics Core materials on
 ## 3) Background noise removal
 
 Background removal is crucial in single-cell RNA sequencing (scRNA-seq) analysis due to the presence of contaminants such as cell-free "ambient" RNA and chimeric cDNA molecules resulting from barcode swapping.
-Barcode swapping can happen when cDNA molecules from different beads, which carry different barcodes, mix together during the amplification step. This can occur due to unremoved oligonucleotides from other beads or incomplete extension of PCR products. As a result, chimeric cDNA molecules are formed, where the barcode and UMI sequences are "swapped" between different beads. When these chimeric molecules are sequenced, the assigned barcode does not match the original bead, leading to incorrect assignment of the cDNA to the corresponding cell.
+Barcode swapping can happen when cDNA molecules from different beads, which carry different barcodes, mix together during the amplification step. This can occur due to unremoved oligonucleotides from other beads or incomplete extension of PCR products. As a result, chimeric cDNA molecules are formed, where the barcode and UMI sequences are "swapped" between different beads. When these chimeric molecules are sequenced, the assigned barcode does not match the original bead, leading to the incorrect assignment of the cDNA to the corresponding cell.
 
-These contaminants contribute to background noise, which can negatively impact data analysis. Background noise reduces the separability of cell type clusters, interferes with differential expression analysis, and confounds comparisons between samples. To address this, algorithms like SoupX, DecontX, and CellBender estimate and correct for background noise using marker genes, empty droplets, and modeling of barcode swapping. Evaluating method performance involves assessing if the model effectively removes expression from other cell types using datasets with known cell type profiles and exclusive marker genes. However, the impact of background correction on expression level shifts induced by background noise remains a challenge in scRNA-seq analysis.
+These contaminants contribute to background noise, which can negatively impact data analysis. Background noise reduces the separability of cell-type clusters, interferes with differential expression analysis, and confounds comparisons between samples. To address this, algorithms like SoupX, DecontX, and CellBender estimate and correct for background noise using marker genes, empty droplets, and modeling of barcode swapping. Evaluating method performance involves assessing if the model effectively removes expression from other cell types using datasets with known cell type profiles and exclusive marker genes. However, the impact of background correction on expression level shifts induced by background noise remains a challenge in scRNA-seq analysis.
 
 As recommended by [Philipp Janssen et al,2023](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-023-02978-x):
 
@@ -539,19 +539,19 @@ metadata_clean %>%
 The ultimate goal is to define clusters of cells and identify cell types in the samples. To achieve this, there are several steps:
 
 1-Identify unwanted variability by exploring data and covariates such as cell cycle and mitochondrial gene expression.
-Both biological source of variation (e.g. effect of cell cycle on transcriptome) and technical source should be explored and account for. In early version of Seurat one needs to normalize data, find variable features and then scale data while setting a variable like mitochondrial contamination or cell cycle stage to be regressed out. So here is code for doing these steps to mitigate cell cycle stage effects on the dataset, however a newer function in Seurat has automated all of these steps (`SCTtansform()`).
+Both biological sources of variation (e.g. effect of cell cycle on transcriptome) and technical sources should be explored and accounted for. In an early version of Seurat, one needs to normalize data, find variable features, and then scale data while setting a variable like mitochondrial contamination or cell cycle stage to be regressed out. So here is the code for doing these steps to mitigate cell cycle stage effects on the dataset, however, a newer function in Seurat has automated all of these steps (`SCTtansform()`).
 
-2-Normalize and remove unwanted variability using Seurat's `sctransform` function. The normalization step is necessary to make expression counts comparable across genes and/or samples. The counts of mapped reads for each gene is proportional to the expression of RNA (“interesting”) in addition to many other factors (“uninteresting” such as sequencing depth and gene length). Normalization is the process of adjusting raw count values to account for the “uninteresting” factors.
-For simplicity , normalization is assumed as two step process: scaling and transforming.
-In scaling the goal is to multiply each UMI count by a cell specific factor to get all cells to have the same UMI counts.For transformation simple approaches like log-transformation showed to be not that useful, especially in the case of genes with high expression but showing decent performance for low/intreemediate expressed genes. So we cannot treat all genes the same.
-The proposed solution for data transformation is Pearson residuals (inmplemented in Seurat's `SCTransform` function), which applies a gene-specific weight to each measurement based on the evidence of non-uniform expression across cells. This weight is higher for genes expressed in a smaller fraction of cells, making it useful for detecting rare cell populations. The weight takes into account not just the expression level but also the distribution of expression.
+2-Normalize and remove unwanted variability using Seurat's `sctransform` function. The normalization step is necessary to make expression counts comparable across genes and/or samples. The counts of mapped reads for each gene are proportional to the expression of RNA (“interesting”) in addition to many other factors (“uninteresting” such as sequencing depth and gene length). Normalization is the process of adjusting raw count values to account for the “uninteresting” factors.
+For simplicity, normalization is assumed as two a two-step process: scaling and transforming.
+In scaling the goal is to multiply each UMI count by a cell-specific factor to get all cells to have the same UMI counts. For transformation, simple approaches like log-transformation showed to be not that useful, especially in the case of genes with high expression but showed decent performance for low/intermediate expressed genes. So we cannot treat all genes the same.
+The proposed solution for data transformation is Pearson residuals (implemented in Seurat's `SCTransform` function), which applies a gene-specific weight to each measurement based on the evidence of non-uniform expression across cells. This weight is higher for genes expressed in a smaller fraction of cells, making it useful for detecting rare cell populations. The weight takes into account not just the expression level but also the distribution of expression.
 
 
-3- Integrate data using Seurat's method to compare celltype expression between groups.
+3- Integrate data using Seurat's method to compare cell type expression between groups.
 
 4-Cluster cells based on similarity of gene expression profiles using Seurat's PCA scores.
 
-5-Evaluate cluster quality by checking for sources of uninteresting variation, principal component influence, and exploring cell type identities using known markers.
+5-Evaluate cluster quality by checking for sources of uninteresting variation, and principal component influence, and exploring cell type identities using known markers.
 
 
 ### Exploring sources of unwanted variation
@@ -660,11 +660,11 @@ Based on the above plots, we can see that cells are scattered regardless of thei
 
 ### SCTransform
 
-This function is useful for  normalization and regressing out sources of unwanted variation at the same time.The method constructs a generalized linear model (GLM) for each gene, using UMI counts as the response variable and sequencing depth as the explanatory variable. To handle the fact that different genes have different levels of expression, information is pooled across genes with similar abundances, resulting in more accurate parameter estimates.
+This function is useful for  normalization and regressing out sources of unwanted variation at the same time. The method constructs a generalized linear model (GLM) for each gene, using UMI counts as the response variable and sequencing depth as the explanatory variable. To handle the fact that different genes have different levels of expression, information is pooled across genes with similar abundances, resulting in more accurate parameter estimates.
 
 This regularization process yields residuals, which represent effectively normalized data values that are no longer correlated with sequencing depth.
 
-This method is more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes. In practice `SCTransform` single command replaces `NormalizeData()`, `ScaleData()`, and `FindVariableFeatures()`. Since we have two group of sample we will run SCTransform on each groups after doing "integration".
+This method is a more accurate method of normalizing, estimating the variance of the raw filtered data, and identifying the most variable genes. In practice `SCTransform` single command replaces `NormalizeData()`, `ScaleData()`, and `FindVariableFeatures()`. Since we have two groups of samples we will run SCTransform on each group after doing "integration".
 
 #### Integration
 
@@ -791,7 +791,7 @@ dev.off()
 ```
 ![plot-UMAP](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/UMAP_integrated.png)
 
-For future: considering tumur grade and using Harmony for integration
+For the future: considering tumor grade and using Harmony for integration
 
 
 
@@ -800,10 +800,10 @@ For future: considering tumur grade and using Harmony for integration
 
 #### Identify significant PCs
 
-For new method like SCTransform it is not needed to calculate the number of PCs for clustering. However older methods could not efficiently removed technical biases , so using them it was necessary to have some idea about the number of PCs that can capture most of information in the dataset.
+For new methods like SCTransform it is not needed to calculate the number of PCs for clustering. However, older methods could not efficiently remove technical biases, so using them it was necessary to have some idea about the number of PCs that can capture most of the information in the dataset.
 
 ``` r
-# Explore heatmap of PCs
+# Explore the heatmap of PCs
 png(filename = "heatmap_integrated_2.png", width = 16, height = 8.135, units = "in", res = 300)
 DimHeatmap(seurat_integrated, 
            dims = 1:9, 
@@ -1020,7 +1020,7 @@ dev.off()
 
 -   Segregation of clusters by various sources of uninteresting variation
 
-We expect to see a uniform coluring for all variables in all clusters. Sometimes this is not the case. Like here `nUMI` and `nGene` showing higher value is some clusters. We have to watch these cluster and inspect them in terms of type of cell therein. So that may explain some of the variation that we are seeing.
+We expect to see a uniform coloring for all variables in all clusters. Sometimes this is not the case. For here `nUMI` and `nGene` show higher values is some clusters. We have to watch these clusters and inspect them in terms of the type of cell therein. So that may explain some of the variation that we are seeing.
 
 ``` r
 # Determine metrics to plot present in seurat_integrated@meta.data
@@ -1130,17 +1130,17 @@ dev.off()
 ```
 ![umap_t_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_t_cells.png)
 
-### Marker identification
+## 7 Marker identification and cell type assignment
 
-This can be the last step in our pipeline which aims to determine the gene markers for each of the clusters and identify cell types of each cluster using markers. Also this step helps to determine whether there's a need to re-cluster based on cell type markers, or maybe clusters need to be merged or split.
+This can be the last step in our pipeline which aims to determine the gene markers for each of the clusters and identify cell types of each cluster using markers. Also, this step helps to determine whether there's a need to re-cluster based on cell type markers, or maybe clusters need to be merged or split.
 
-For marker identification there are three functions in the seurat package, each with different application: 
+For marker identification, there are three functions in the Seurat package, each with a different application: 
 
-`FindAllMarkers()`: It should only be used when comparing a cluster against other clusters belong to the same group. i.e. this function should be used only when we have one group/condition.
+`FindAllMarkers()`: It should only be used when comparing a cluster against other clusters belonging to the same group. i.e. this function should be used only when we have one group/condition.
 
-`FindConservedMarkers()`:When we have two groups like tumor vs normal or invasive vs. non invasive identifying conserved markers is the best approach. In this way, we find DE genes for a given cluster in once condition (e.g. invasive) comparing the cluster against the rest of cluster in the same condition group. We do the same for that given cluster in the other condition (non-invasive). Finally the two list will be mergerd to give us the conserved marker for a given cluster. 
+`FindConservedMarkers()`: When we have two groups like tumor vs normal or invasive vs. noninvasive identifying conserved markers is the best approach. In this way, we find DE genes for a given cluster in one condition (e.g. invasive) comparing the cluster against the rest of the cluster in the same condition group. We do the same for that given cluster in the other condition (non-invasive). Finally, the two lists will be merged to give us the conserved marker for a given cluster. 
 
-`FindMarkers()`: This is helpful with identifying gene markers for each cluster. In practice sometimes the list of markers returned don’t sufficiently separate some of the clusters. We can use this function to further diffrentiate between those clusters.  
+`FindMarkers()`: This is helpful with identifying gene markers for each cluster. In practice sometimes the list of markers returned doesn’t sufficiently separate some of the clusters. We can use this function to further differentiate between those clusters.  
 
 
 ``` r
@@ -1236,7 +1236,7 @@ data.table::fwrite(top10, "blca_top10_conserved_markers.csv")
 
 
 
-There are a number of tools that one may use to assign cell type to a cluster. However almost non of them at the time of writing can help with bladder tissue. So I have to looked up for genes in the [PanglaoDB](https://panglaodb.se/index.html) database manually and assign cell type to each cluster. So to do this job in a more efficient way, lets first identify which markers are associated to more clusters, then assign cell type to those clusters.
+There are a number of tools that one may use to assign cell types to a cluster. However almost none of them at the time of writing can help with bladder tissue. So I have to look up genes in the [PanglaoDB](https://panglaodb.se/index.html) database manually and assign cell type to each cluster. So to do this job in a more efficient way, let's first identify which markers are associated with more clusters, then assign cell type to those clusters.
 
 ``` r
 top10_mod <- data.frame(unclass(table(top10$gene, top10$cluster_id)))
@@ -1263,7 +1263,28 @@ So cell type for top markers:
 | Endothelial cells        | FABP4, FABP5                                          |
 | Plasma cell              | IGHA1,IGHG1,IGHG3,IGHG4,IGKC,IGLC1,IGLC3,IGLC3,JCHAIN |
 
-Lets visualize some of the genes and see in which cluster they show expression.
+Also, there is a table from [John P. Sfakianos et al](https://www.nature.com/articles/s41467-020-16162-3) , which summarizes the tumor cell markers:
+
+| CellType                 | Genes                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| Luminal                  | CYP2J2,ERBB2,ERBB3,FGFR3,FOXA1,GATA3,GPX2,KRT18,KRT19,KRT20,KRT7,KRT8,PPARG,XBP1,UPK1A,UPK2 |
+| EMT and smooth muscle    | PGM5,DES,C7,SRFP4,COMP,SGCD                                                                 |
+| EMT and claudin          | ZEB1,ZEB2,VIM,SNAI1,TWIST1,FOXC2,CDH2,CLDN3,CLDN7,CLDN4,CDH1,SNAI2                          |
+| Basal                    | CD44,CDH3,KRT1,KRT14,KRT16,KRT5,KRT6A,KRT6B,KRT6C                                           |
+| P53-like                 | ACTG2,CNN1,MYH11,MFAP4,PGM5,FLNC,ACTC1,DES,PCP4                                             |
+| Squamous                 | DSC1,DSC2,DSC3,DSG1,DSG2,DSG3,S100A7,S100A8                                                 |
+| Immune                   | CD274,PDCD1LG2,IDO1,CXCL11,L1CAM,SAA1                                                       |
+| Neuroendocrine           | CHGA,CHGB,SCG2,ENO2,SYP,NCAM1                                                               |
+| Neuronal differentiation | MSI1,PLEKHG4B,GNG4,PEG10,RND2,APLP1,SOX2,TUBB2B                                             |
+| Downregulated CIS        | CRTAC1,CTSE,PADI3                                                                           |
+| Upregulated CIS          | MSN,NR3C1                                                                                   |
+| Cancer stem cell         | CD44,KRT5,RPSA,ALDH1A1                                                                      |
+
+
+Let's visualize some of the genes and see in which cluster they show expression.
+
+
+
 
 ```R
 
@@ -1290,7 +1311,7 @@ dev.off()
 ![violin_high_freq_basal_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/violin_high_freq_basal_cells.png)
 
 
-So according to "basal cells" visualization , following clusters may show clusters of basal cells:
+So according to "basal cells" visualization, following clusters may show clusters of basal cells:
 0, 2,3,9,10,14,17,18,19(?),20 and 21.
 
 
@@ -1384,8 +1405,8 @@ dev.off()
 ```
 ![umap_cluster12_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster12_markers.png)
 
-So it seems clusters 1,4,8,12,13 and 16 are the same cell type with minor subtypes.However cluster 5 and 7 showing some level of expression for markers in cluster 1 + 4, but they need separate inspection. 
-Conserved markers in these two clusters are as follow
+So it seems clusters 1,4,8,12,13 and 16 are the same cell type with minor subtypes. However cluster 5 and 7 show some level of expression for markers in cluster 1 + 4, but they need separate inspection. 
+Conserved markers in these two clusters are as follows
 
 ```
 [1] "LDB2"    "SPARCL1" "GNG11"   "FLT1"    "IFI27"   "RAMP2"   "PECAM1"
@@ -1423,10 +1444,10 @@ dev.off()
 ![violin_cluster5_7_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/violin_cluster5_7_markers.png)
 
 
-So as expected cluster 7 and 5 representing same cell types. 
+So as expected clusters 7 and 5 represent the same cell types. 
 In almost all cases cluster 17 showed some level of expression for EC markers. 
 
-Lets now have a look at markers for clusters 6,15 and 11:
+Let's now have a look at markers for clusters 6,15 and 11:
 
 ```R
 png(filename = "umap_cluster11_15_6_markers.png", width = 26, height = 18.135, units = "in", res = 300)
@@ -1441,7 +1462,7 @@ dev.off()
 ![umap_cluster11_15_6_markers.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_cluster11_15_6_markers.png)
 
 
-According to the markers such ass different collagen, clusters 11 and 15 seem to be fibroblasts while cluster 6 showing a mix of fibroblast and non-fibroblast markers.
+According to the markers such as different collagen, clusters 11 and 15 seem to be fibroblasts while cluster 6 shows a mix of fibroblast and non-fibroblast markers.
 
 Now we can generate UMAP with cell type as labels;
 
