@@ -14,7 +14,7 @@ Contents:
 4) [Loading single-cell RNA-seq count data](https://github.com/hamidghaedi/scRNA_seq-analysis#3-loading-single-cell-rna-seq-count-data)
 5) [Quality control](https://github.com/hamidghaedi/scRNA_seq-analysis#5-quality-control)
 6) [Normalization, regressing out unwanted variation and clustering](https://github.com/hamidghaedi/scRNA_seq-analysis#6-normalization-regressing-out-unwanted-variation-and-clustering)
-7) [Marker identification and cell type assignment](https://github.com/hamidghaedi/scRNA_seq-analysis#marker-identification)
+7) [Marker identification and cell type assignment](https://github.com/hamidghaedi/scRNA_seq-analysis#7-marker-identification-and-cell-type-assignment)
 8) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
 9) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
 10) [DE and enrichment analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#de-and-gsea)
