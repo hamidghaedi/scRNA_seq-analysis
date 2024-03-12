@@ -24,7 +24,7 @@ Contents:
  
 
 
-## 1) Data download on ComputeCanada
+## 1-Data download on ComputeCanada
 
 ``` shell
 
