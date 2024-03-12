@@ -1571,7 +1571,7 @@ dev.off()
 ![umap_with_label_scType.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_with_label_scType.png)
 
 
-# 9) MIBC vs. NMIBC
+# 8) MIBC vs. NMIBC
 
 There are four NMIBC samples(SRR12603790,SRR12603789,SRR12603787,SRR12603786) and four MIBC samples(SRR12603785,SRR12603784,SRR12603783,SRR12603782) in the dataset. Comparing these two group against each other could have given a clue on the invasion cell type signature.
 
@@ -1922,7 +1922,7 @@ dev.off()
 ![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
 
 
-# 9) Ananlysis considering cell superclusters
+# 9) Analyzing epithelial (EPCAM +) cells
 
 This section is based on what I can get from the paper, but I stay focused on cancer samples and will use harmony to do integration. Finally, I do trajectory analysis for all cells which identified as epithelial cells.
 
@@ -1934,11 +1934,11 @@ This section is based on what I can get from the paper, but I stay focused on ca
 
 ```r
 #________________________Reading the files______________________#
-# create list of samples
+# create a list of samples
 samples <- list.files("./filtered/")
 #samples <- samples[grepl('^filtered',samples,perl=T)]
 
-# read files inot Seurat objects
+# read files into Seurat objects
 for (file in samples){
   print(paste0(file))
   seurat_data <- Read10X(data.dir = paste0("./filtered/", file))
@@ -1951,7 +1951,7 @@ for (file in samples){
 # updated sample name 
 samples_blca <- samples[-c(1,2,9)]
 
-# now merging all objects inot one Seurat obj
+# Now merging all objects into one Seurat obj
 
 merged_seurat <- merge(x = SRR12603782,
                        y = c(SRR12603783,
@@ -1987,9 +1987,9 @@ filtered_seurat <- subset(merged_seurat,
                           mitoRatio < 0.10)
 
 #________________________Integration using Harmony____________________________#
-#integration using harmony need sevral steps to be undertaken:
+#integration using harmony need several steps to be undertaken:
 
-# Perform log-normalization and feature selection, as well as SCT normalization on global object
+# Perform log-normalization and feature selection, as well as SCT normalization on the global object
 merged_seurat <- filtered_seurat %>%
     NormalizeData() %>%
     FindVariableFeatures(selection.method = "vst", nfeatures = 3000) %>% 
@@ -2019,14 +2019,14 @@ harmonized_seurat <- RunUMAP(harmonized_seurat, reduction = "harmony", assay = "
 
 #________________________Cluster identification and Inspect the effects of Harmony batch removel ____________#
 
-# to set reduction to harmony and finding the clusters
+# to set reduction to harmony and find the clusters
 harmonized_seurat <- FindNeighbors(object = harmonized_seurat, reduction = "harmony")
 harmonized_seurat <- FindClusters(harmonized_seurat, resolution = c(0.1, 0.2, 0.4, 0.6, 0.8))
 
 # visualization
 Idents(harmonized_seurat) <- harmonized_seurat@meta.data$SCT_snn_res.0.1
 
-# color cells based on the sample name
+# Color cells based on the sample name
 # Plot UMAP 
 png(filename = "harmony_UMAP_y_sample.png", width = 16, height = 8.135, units = "in", res = 300)
 DimPlot(harmonized_seurat,
@@ -2053,7 +2053,7 @@ dev.off()
 
 
 ```r
-# lets visualize cells expressing supercluster markers:
+# let's visualize cells expressing supercluster markers:
 # CD31: PECAM1
 markers <- c("EPCAM", "PECAM1", "COL1A1", "PDGFRA", "RGS5", "CD79A", "LYZ", "CD3D", "TPSAB1")
 
@@ -2107,7 +2107,7 @@ data.table::fwrite(cluster_markers_10, "cluster_markers_10.csv")
 ```
 
 ```r
-# feature plot for top markers
+# Feature plot for top markers
 plotList = list()
 
 for(cluster in 1:nrow(cluster_markers_10)){
@@ -2127,7 +2127,7 @@ plotList[[9]]
 dev.off()
 #
 ```
-Expression of cluster specific markers:
+Expression of cluster-specific markers:
 - [cluster0](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster0.png)
 
 - [cluster1](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmony_blca_clsuter_markers_cluster1.png)
@@ -2197,7 +2197,7 @@ harmonized_seurat <- RenameIdents(object = harmonized_seurat,
                                
 
 
-# Plot the UMAP withy new labells
+# Plot the UMAP with new labels
 png(filename = "harmont_blca_umap_with_label.png", width = 16, height = 8.135, units = "in", res = 600)
 DimPlot(object = harmonized_seurat, 
         reduction = "umap", 
@@ -2209,12 +2209,12 @@ dev.off()
 ```
 ![harmont_blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/harmont_blca_umap_with_label.png)
 
-Cluster 1, T-cells shows some level of impurity by cluster 0, epithelial cells. This Impurity is especially evident in invasive samples. 
+Cluster 1, T-cells show some level of impurity by cluster 0, epithelial cells. This Impurity is especially evident in invasive samples. 
 
 ```r
-# Obtaining clsuters with epithelial cells
+# Obtaining clusters with epithelial cells
 
-# To see the number of cells in each clsuter
+# To see the number of cells in each cluster
 
 table(Idents(harmonized_seurat))
 
@@ -2237,7 +2237,7 @@ epi_cell_ids <- c(epi_cell_ids,rownames(harmonized_seurat@meta.data)[harmonized_
 
 epi_seurat <- subset(filtered_seurat, subset = cells %in% epi_cell_ids)
 
-# Perform log-normalization and feature selection, as well as SCT normalization on global object
+# Perform log-normalization and feature selection, as well as SCT normalization on the global object
 epi_seurat <- epi_seurat %>%
     NormalizeData() %>%
     FindVariableFeatures(selection.method = "vst", nfeatures = 3000) %>% 
@@ -2262,14 +2262,14 @@ epi_seurat <- RunUMAP(epi_seurat, reduction = "harmony", assay = "SCT", dims = 1
 
 #Cluster identification and Inspect the effects of Harmony batch removel#
 
-# to set reduction to harmony and finding the clusters
+# to set reduction to harmony and find the clusters
 epi_seurat <- FindNeighbors(object = epi_seurat, reduction = "harmony")
 epi_seurat <- FindClusters(epi_seurat, resolution = c(0.1, 0.2, 0.4, 0.6, 0.8))
 
 # visualization
 Idents(epi_seurat) <- epi_seurat@meta.data$SCT_snn_res.0.1
 
-# color cells based on the sample name
+# Color cells based on the sample name
 # Plot UMAP 
 png(filename = "epi_harmony_UMAP_y_sample.png", width = 16, height = 8.135, units = "in", res = 300)
 DimPlot(epi_seurat,
@@ -2334,7 +2334,7 @@ epi_seurat <- RenameIdents(object = epi_seurat,
                                "4" = "immunomodulatory_luminal_cell",
                                "5" = "adhesion_signaling_luminal_cell")
 
-# Plot the UMAP withy new labells
+# Plot the UMAP with new labels
 png(filename = "labelled_epi.png", width = 16, height = 8.135, units = "in", res = 600)
 DimPlot(object = epi_seurat, 
         reduction = "umap", 
@@ -2344,7 +2344,7 @@ DimPlot(object = epi_seurat,
 dev.off()
 ```
 
-**cluster 5** can benefit from re-clustering. It is consisted of several patches of cells. If we increase the clustering resolution we should get the each patches as a cluster. 
+**Cluster 5** can benefit from re-clustering. It consists of several patches of cells. If we increase the clustering resolution we should get each patches as a cluster. 
 
 ```r
 Idents(epi_seurat) <- epi_seurat$SCT_snn_res.0.2
@@ -2356,7 +2356,7 @@ DimPlot(epi_seurat,
 dev.off()
 ```
 ![]()
-So based on the above graph,cells in cluster 5 are now clustered in 8,9,11 and 12. The current cluster 8 can be split into more clusters.
+So based on the above graph, cells in cluster 5 are now clustered in 8,9,11, and 12. The current cluster 8 can be split into more clusters.
  
 ```r
 Idents(epi_seurat) <- epi_seurat$SCT_snn_res.0.6
@@ -2367,7 +2367,7 @@ DimPlot(epi_seurat,
         label.size = 6)
 dev.off()
 ```
-Using the above resolution we can get two different cluster of cells for cluster 8. Now lets generate a customized `Ident` for the data set:
+Using the above resolution we can get two different clusters of cells for cluster 8. Now let's generate a customized `Ident` for the data set:
 
 ```r
 idt <- epi_seurat@meta.data[, c(14,15,17)]
@@ -2376,7 +2376,7 @@ idt <- data.frame(apply(idt, 2, as.character))
 # to see what to do:
 # table(epi_seurat$SCT_snn_res.0.2, epi_seurat$SCT_snn_res.0.6)
 
-# Replacing values for clsuter 8 with cluster 18 and 19 in res 0.6
+# Replacing values for cluster 8 with clusters 18 and 19 in res 0.6
 idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "15"] <- "8_a"
 idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "1"] <- "8_a"
 idt$SCT_snn_res.0.2[idt$SCT_snn_res.0.6 == "2"] <- "8_a"
@@ -2396,7 +2396,7 @@ idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "6"] <- "5_a"
 idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "8_b"] <- "5_c"
 idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "11"] <- "5_d"
 idt$SCT_snn_res.0.1[idt$SCT_snn_res.0.2 == "12"] <- "5_e"
-# adding new idents to seurat obj
+# adding new idents to Seurat obj
 epi_seurat$new_idents <- idt$SCT_snn_res.0.1
 # setting ident for plotting
 Idents(epi_seurat) <- epi_seurat$new_idents
@@ -2418,7 +2418,7 @@ library(SCP)
 
 # DE and Enrichement analysis
 
-#Differential expression analysis; this takes a while, to upload the object contains DE result:
+#Differential expression analysis; this takes a while, to upload the object containing DE result:
 epi_seurat <- readRDS("updated_epi_seurat.RDS")
 
 epi_seurat <- RunDEtest(srt = epi_seurat, group_by = "clusters", fc.threshold = 1.5, only.pos = FALSE)
@@ -2446,7 +2446,7 @@ DEGs <- DEGs[with(DEGs, avg_log2FC > 1.5 & p_val_adj < 0.05), ]
 
 
 # Enrichment analysis
-## over -representation analysis
+## over-representation analysis
 
 epi_seurat <- RunEnrichment(
   srt = epi_seurat, group_by = "clusters", db = "GO_BP", species = "Homo_sapiens",
@@ -2523,7 +2523,7 @@ sce <- as.SingleCellExperiment(epi_seurat)
 sce <- slingshot(sce, clusterLabels = 'clusters', reducedDim = 'UMAP')
 
 ## The following analysis is computationally intensive; so only a subset of genes will be passed to the function
-# Gene filteration: filter out genes with lower than 5 reads expressed in < 500 cells
+# Gene filtration: filter out genes with lower than 5 reads expressed in < 500 cells
 geneFilter <- apply(assays(sce)$counts,1,function(x){
   sum(x >= 5) >= 500
 })
@@ -2531,9 +2531,9 @@ tdg <- rownames(sce[geneFilter, ])
 
 # Variable feature
 vf <- VariableFeatures(epi_seurat)
-# combining the genes
+# Combining the genes
 selected_feature <- tdg[tdg %in% vf]
-## Using tradeSeq package
+## Using the tradeSeq package
 # Number of knot determined by ....
 icMat <- evaluateK(counts = sce, sds = crv, k = 3:7, nGenes = 50,
                    verbose = TRUE, plot = TRUE)
@@ -2544,7 +2544,7 @@ tradeseq_res <- fitGAM(counts = cse, nknots = 5, genes = selected_feature, verbo
 # test for dynamic expression
 ATres <- associationTest(tradeseq_res)
 
-# visualizing heat map
+# Visualizing heat map
 pst.ord <- order(sce$slingPseudotime_1, na.last = NA)
 heatdata <- as.matrix(assays(sce)$counts[topgenes, pst.ord])
 heatclus <- sce$clusters[pst.ord]
@@ -2559,7 +2559,7 @@ dev.off()
 
 
 
-## Exploring normal bladder mocusa samples
+## Exploring normal bladder mouse samples
 
 ```r
 #________________________Reading the files______________________#
@@ -2633,14 +2633,14 @@ harmonized_seurat <- RunUMAP(harmonized_seurat, reduction = "harmony", assay = "
 
 #Cluster identification and Inspect the effects of Harmony batch removel ____________#
 
-# to set reduction to harmony and finding the clusters
+# to set reduction to harmony and find the clusters
 harmonized_seurat <- FindNeighbors(object = harmonized_seurat, reduction = "harmony")
 harmonized_seurat <- FindClusters(harmonized_seurat, resolution = c(0.1, 0.2, 0.4, 0.6, 0.8))
 
 # visualization
 Idents(harmonized_seurat) <- harmonized_seurat@meta.data$SCT_snn_res.0.1
 
-# color cells based on the sample name
+# Color cells based on the sample name
 # Plot UMAP 
 png(filename = "normal_harmony_UMAP_y_sample.png", width = 16, height = 8.135, units = "in", res = 300)
 DimPlot(harmonized_seurat,
@@ -2657,7 +2657,7 @@ DimPlot(harmonized_seurat,
         label.size = 6)
 dev.off()
 
-# lets visualize cells expressing supercluster markers:
+# let's visualize cells expressing supercluster markers:
 # CD31: PECAM1
 markers <- c("EPCAM", "PECAM1", "COL1A1", "PDGFRA", "RGS5", "CD79A", "LYZ", "CD3D", "TPSAB1")
 
@@ -2675,13 +2675,13 @@ dev.off()
 ![normal_umap_superCluster_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_umap_superCluster_cells.png)
 
 
-It seems the epithelial cells are clustered together in cluster 4. So for further analysis , I will be focusing on these cells. 
+It seems the epithelial cells are clustered together in cluster 4. So for further analysis, I will be focusing on these cells. 
 ```r
 epi_cell_ids <- rownames(harmonized_seurat@meta.data)[harmonized_seurat@meta.data$SCT_snn_res.0.1 == '4']
 
 epi_seurat <- subset(filtered_seurat, subset = cells %in% epi_cell_ids)
 
-# Perform log-normalization and feature selection, as well as SCT normalization on global object
+# Perform log-normalization and feature selection, as well as SCT normalization on the global object
 epi_seurat <- epi_seurat %>%
     NormalizeData() %>%
     FindVariableFeatures(selection.method = "vst", nfeatures = 3000) %>% 
@@ -2700,7 +2700,7 @@ epi_seurat <- RunUMAP(epi_seurat, reduction = "harmony", assay = "SCT", dims = 1
 
 #Cluster identification and Inspect the effects of Harmony batch removel#
 
-# to set reduction to harmony and finding the clusters
+# to set reduction to harmony and find the clusters
 epi_seurat <- FindNeighbors(object = epi_seurat, reduction = "harmony")
 epi_seurat <- FindClusters(epi_seurat, resolution = c(0.1, 0.2, 0.4, 0.6, 0.8))
 
@@ -2795,7 +2795,7 @@ Luminal Differentiation Cluster: This name is suggested based on the presence of
 
 **cluster 6**
 
-Basal like: This name emphasizes the presence of markers like ZEB1, TCF4, and KLF2, which have been associated with basal-like features in various epithelial tissues. It suggests that the cluster may represent cells with a basal-like differentiation program.
+Basal-like: This name emphasizes the presence of markers like ZEB1, TCF4, and KLF2, which have been associated with basal-like features in various epithelial tissues. It suggests that the cluster may represent cells with a basal-like differentiation program.
 
 ```r
 # Rename all identities
