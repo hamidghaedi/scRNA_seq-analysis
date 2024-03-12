@@ -1128,7 +1128,7 @@ dev.off()
 ```
 ![umap_t_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_t_cells.png)
 
-## 7 Marker identification and cell type assignment
+## 7) Marker identification and cell type assignment
 
 This can be the last step in our pipeline which aims to determine the gene markers for each of the clusters and identify cell types of each cluster using markers. Also, this step helps to determine whether there's a need to re-cluster based on cell type markers, or maybe clusters need to be merged or split.
 
@@ -1571,7 +1571,7 @@ dev.off()
 ![umap_with_label_scType.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_with_label_scType.png)
 
 
-# MIBC vs. NMIBC
+# 9) MIBC vs. NMIBC
 
 There are four NMIBC samples(SRR12603790,SRR12603789,SRR12603787,SRR12603786) and four MIBC samples(SRR12603785,SRR12603784,SRR12603783,SRR12603782) in the dataset. Comparing these two group against each other could have given a clue on the invasion cell type signature.
 
@@ -1922,7 +1922,7 @@ dev.off()
 ![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
 
 
-# Ananlysis considering cell superclusters
+# 9) Ananlysis considering cell superclusters
 
 This section is based on what I can get from the paper, but I stay focused on cancer samples and will use harmony to do integration. Finally, I do trajectory analysis for all cells which identified as epithelial cells.
 
@@ -2410,7 +2410,7 @@ dev.off()
 ```
 ![cluster_epi_harmony_UMAP_new_idents.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/cluster_epi_harmony_UMAP_new_idents.png)
 
-## DE and GSEA 
+## 10) DE and GSEA 
 
 ```r
 library(SCP)
@@ -2497,7 +2497,7 @@ dev.off()
 ![enrichment_3.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/enrichment_3.png)
 
 
-## Trajectory inference
+## 11) Trajectory inference
 
 Slingshot is a computational method designed for cell lineage inference and pseudotime estimation in single-cell transcriptomics data. It operates by leveraging gene expression dynamics to reconstruct the developmental trajectories of individual cells and assign them pseudotime values. The method begins by clustering cells based on their gene expression profiles, allowing for the identification of distinct cell populations. It then performs differential expression analysis to identify genes that are dynamically expressed across these populations, capturing the transitions between different cell types or states. Slingshot uses this information to infer lineage relationships between the cell populations, revealing the hierarchical structure of the developmental trajectory. By assigning pseudotime values, Slingshot estimates the relative progression of cells through different stages of development or biological processes. The inferred trajectories and pseudotime values provide insights into the temporal ordering of cellular events and gene expression dynamics. Slingshot's visualization tools facilitate the exploration and interpretation of these results, enabling researchers to gain a deeper understanding of the underlying processes driving cellular differentiation and disease progression in single-cell transcriptomics data.
 
