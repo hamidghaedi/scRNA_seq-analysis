@@ -15,10 +15,10 @@ Contents:
 5) [Quality control](https://github.com/hamidghaedi/scRNA_seq-analysis#5-quality-control)
 6) [Normalization, regressing out unwanted variation and clustering](https://github.com/hamidghaedi/scRNA_seq-analysis#6-normalization-regressing-out-unwanted-variation-and-clustering)
 7) [Marker identification and cell type assignment](https://github.com/hamidghaedi/scRNA_seq-analysis#7-marker-identification-and-cell-type-assignment)
-8) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#mibc-vs-nmibc)
-9) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#ananlysis-considering-cell-super-clusters)
-10) [DE and enrichment analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#de-and-gsea)
-11) [Trajectory inference](https://github.com/hamidghaedi/scRNA_seq-analysis#trajectory-inference)
+8) [Comparing muscle invasive BLCA vs. Non-muscle invasive BLCA](https://github.com/hamidghaedi/scRNA_seq-analysis#8-mibc-vs-nmibc)
+9) [Analyzing epithelial (EPCAM +) cells](https://github.com/hamidghaedi/scRNA_seq-analysis#9-mibc-vs-nmibc)
+10) [DE and enrichment analysis](https://github.com/hamidghaedi/scRNA_seq-analysis#10-de-and-gsea)
+11) [Trajectory inference](https://github.com/hamidghaedi/scRNA_seq-analysis#11-trajectory-inference)
 12) RNA velocity analysis. Materials related to RNA velocity analysis have  moved [here](https://github.com/hamidghaedi/scRNA_velocity_analysis)
 
  
