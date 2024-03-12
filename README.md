@@ -24,7 +24,7 @@ Contents:
  
 
 
-## 1-Data download on ComputeCanada
+## 1) Data download on ComputeCanada
 
 ``` shell
 
@@ -68,7 +68,7 @@ curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR126/080/SRR12603780/SRR12603780_1.
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR126/080/SRR12603780/SRR12603780_2.fastq.gz -o SRR12603780_normal_bladder_mucosa_2_2.fastq.gz
 ```
 
-It is always recomended to run QC on samples; so uisng the following code we can run `fastqc` on all samples
+It is always recommended to run QC on samples; so using the following code we can run `fastqc` on all samples
 
 ``` shell
 #!/bin/bash
@@ -91,7 +91,7 @@ fastqc ./fastq/*.fastq.gz --outdir ./qc_raw -f fastq -t 12 --nogroup
 
 ```
 
-There are diffrences between sequence length of read 1 and read 2 for each samples; read 1 provides data on Cell barcode & UMI and read 2 has the insert sequence. Files coming from SRA usually come with names like something_1\_fastq.gz and something_2\_fastq.gz . This [blog](https://kb.10xgenomics.com/hc/en-us/articles/115003802691) is helpful to see what are the naming requirements of fastq files for cellranger tool. Briefly;
+There are differences between the sequence length of read 1 and read 2 for each sample; read 1 provides data on Cell barcode & UMI and read 2 has the insert sequence. Files coming from SRA usually come with names like something_1\_fastq.gz and something_2\_fastq.gz . This [blog](https://kb.10xgenomics.com/hc/en-us/articles/115003802691) is helpful to see what are the naming requirements of fastq files for cellranger tool. Briefly;
 
 -   incompatible file name: SRR9291388_1.fastq.gz
 
@@ -111,9 +111,9 @@ done
 
 ## 2) Generating feature-sample expression matrix
 
-The next step is to run `cellranger count` on each samples. There are different types of scRNA libs with different fastq files. This [blog](https://www.10xgenomics.com/support/single-cell-gene-expression/documentation/steps/sequencing/sequencing-requirements-for-single-cell-3) provide details on type of libs from 10X genomics.
+The next step is to run `cellranger count` on each sample. There are different types of scRNA libs with different fastq files. This [blog](https://www.10xgenomics.com/support/single-cell-gene-expression/documentation/steps/sequencing/sequencing-requirements-for-single-cell-3) provides details on the type of libs from 10X genomics.
 
-Running `cellranger` on a cluster with `SLURM` as job schaduler is not an easy task. The following is what I came up with working best for me working on ComputeCanada cluster:
+Running `cellranger` on a cluster with `SLURM` as job scheduler is not an easy task. The following is what I came up with working best for me working on ComputeCanada cluster:
 
 ``` shell
 #!/bin/bash
@@ -163,7 +163,7 @@ As recommended by [Philipp Janssen et al,2023](https://genomebiology.biomedcentr
 
 `In summary, for marker gene analysis, we would always recommend background removal, but for classification, clustering and pseudotime analyses, we would only recommend background removal when background noise levels are high`
 
-In this repo, I wont be using the cellbender filtered matrix, as the main focus of the analysis is cell clustering, rather than marker identification.The following is fully functional cellbender code for the given samples
+In this repo, I won't be using the cellbender filtered matrix, as the main focus of the analysis is cell clustering, rather than marker identification. The following is a fully functional cellbender code for the given samples
 
 ``` shell
 # Running cellbender image on co pute canada 
@@ -376,7 +376,7 @@ metadata %>%
 
 #### Novelty score
 
-The novelty score, computed as the ratio of nGenes over nUMI, measures the complexity of RNA species in each cell. A low number of genes detected in a cell with many captured transcripts (high nUMI) indicates low complexity or novelty. This could be due to an artifact, contamination, or represent a specific cell type (e.g. red blood cells). A good quality cell typically has a novelty score above 0.80.
+The novelty score, computed as the ratio of nGenes over nUMI, measures the complexity of RNA species in each cell. A low number of genes detected in a cell with many captured transcripts (high nUMI) indicates low complexity or novelty. This could be due to an artifact, contamination, or a specific cell type (e.g. red blood cells). A good-quality cell typically has a novelty score above 0.80.
 
 ``` r
 # Visualize the overall complexity of the gene expression by visualizing the genes detected per UMI (novelty score)
@@ -393,7 +393,7 @@ metadata %>%
 
 #### Mitochondrial gene expression detected per cell
 
-High level of expression from mitochondria indicate dying or dead cells. Basically poor quality samples are those that surpass 0.2 mitochondria ratio mark. 
+High levels of expression from mitochondria indicate dying or dead cells. Basically, quality samples are those that surpass 0.2 mitochondria ratio mark. 
 
 ``` r
 # Visualize the distribution of mitochondrial gene expression detected per cell
@@ -429,9 +429,9 @@ metadata %>%
 ```
 ![mitoRatio_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/nUMI_nGene_mitoRatio.png)
 
-There are samples that shows high-quality cells ; high nUMI, high nGene, low number of cells with high mitoRatio and also there are some samples that would clearely benfit from filtering, as they have low quality cells. We expect to see that dying cells to show high level of mitoRatio and low nUMI and nGene . 
+There are samples that shows high-quality cells; high nUMI, high nGene, low number of cells with high mitoRatio and also there are some samples that would clearly benefit from filtering, as they have low-quality cells. We expect to see that dying cells to show high level of mitoRatio and low nUMI and nGene . 
 
-Basically, it is not uncommon to observe cells with high numbers of UMIs and nGene with, but also high mitoRatio. These cells may be stressed or damaged, but they could also represent a heterogeneous population of cells with distinct metabolic states.
+Basically, it is not uncommon to observe cells with high numbers of UMIs and nGene, but also high mitoRatio. These cells may be stressed or damaged, but they could also represent a heterogeneous population of cells with distinct metabolic states.
 
 To investigate the potential cause of high mitochondrial expression ratios, it is important to examine the expression of specific mitochondrial genes and compare them to other genes in the cell. If the expression of mitochondrial genes is elevated relative to other genes, this could suggest mitochondrial dysfunction. Additionally, examining the expression of other stress or damage markers, such as heat shock proteins or cell cycle genes, can also provide insight into the health and state of the cell.
 
@@ -449,7 +449,7 @@ To investigate the potential cause of high mitochondrial expression ratios, it i
 -mitoRatio < 0.2
 
 ``` r
-# Filter out low quality cells using selected thresholds - these will change with experiment
+# Filter out low-quality cells using selected thresholds - these will change with the experiment
 filtered_seurat <- subset(merged_seurat, 
                           subset= nUMI >= 1000 &
                           nGene >= 500 &
@@ -460,13 +460,13 @@ filtered_seurat <- subset(merged_seurat,
 
 #### Gene-level filtering
 
-Keep only genes which are expressed in 100 or more cells (usually thi is 10)
+Keep only genes that are expressed in 100 or more cells (usually that is 10)
 
 ``` r
 # Extract counts
 counts <- GetAssayData(object = filtered_seurat, slot = "counts")
 
-# Output a logical matrix specifying for each gene on whether or not there are more than zero counts per cell
+# Output a logical matrix specifying for each gene whether or not there are more than zero counts per cell
 nonzero <- counts > 0
 # Sums all TRUE values and returns TRUE if more than 100 TRUE values per gene
 keep_genes <- Matrix::rowSums(nonzero) >= 100
@@ -476,7 +476,7 @@ filtered_counts <- counts[keep_genes, ]
 # Reassign to filtered Seurat object
 filtered_seurat <- CreateSeuratObject(filtered_counts, meta.data = filtered_seurat@meta.data)
 
-# Create .RData object to load at any time
+# Create.RData object to load at any time
 save(filtered_seurat, file="seurat_filtered.RData")
 ```
 
@@ -487,7 +487,7 @@ save(filtered_seurat, file="seurat_filtered.RData")
 # Save filtered subset to new metadata
 metadata_clean <- filtered_seurat@meta.data
 
-# to see drop in filtering cells:
+# to see a drop in filtering cells:
 
 met_before <- data.frame(unclass(table(metadata$seq_folder)))
 met_before$QCgroup <- "before"
@@ -515,7 +515,7 @@ cell_count %>% ggplot(aes(x=cell, y=count, fill=QCgroup)) +
 ![cell_countbefore_after_plot](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/before_after_cell_count.png)
 
 ```r
-# Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
+# Visualize the correlation between genes detected and the number of UMIs and determine whether the strong presence of cells with low numbers of genes/UMIs
 
 metadata_clean %>% 
   	ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
@@ -556,7 +556,7 @@ The proposed solution for data transformation is Pearson residuals (implemented 
 
 #### Evaluating effects of cell cycle and mitochondrial expression
 
-We will score the cells for cell cycle genes, and then determine whether cell cycle is a major source of variation in our dataset using PCA.
+We will store the cells for cell cycle genes, and then determine whether cell cycle is a major source of variation in our dataset using PCA.
 
 ``` r
 # Normalize the counts
@@ -585,7 +585,7 @@ Cells in different cell cycle stages:
 So most of the cells are in G1 and then S, which make sense.
 
 ```r
-# Identify the most variable genes and scaling them
+# Identify the most variable genes and scale them
 seurat_phase <- FindVariableFeatures(seurat_phase, 
                      selection.method = "vst",
                      nfeatures = 2000, 
@@ -603,7 +603,7 @@ plot1 + plot2
 
 
 ```r
-# Check quartile values for mitoRatio, we will use this variable later to mitigate unwanted source of variation in dataset
+# Check quartile values for mitoRatio, we will use this variable later to mitigate the unwanted sources of variation in the dataset
 summary(seurat_phase@meta.data$mitoRatio)
 
 # Turn mitoRatio into categorical factor vector based on quartile values
@@ -658,7 +658,7 @@ Based on the above plots, we can see that cells are scattered regardless of thei
 
 ### SCTransform
 
-This function is useful for  normalization and regressing out sources of unwanted variation at the same time. The method constructs a generalized linear model (GLM) for each gene, using UMI counts as the response variable and sequencing depth as the explanatory variable. To handle the fact that different genes have different levels of expression, information is pooled across genes with similar abundances, resulting in more accurate parameter estimates.
+This function is useful for  normalization and regressing sources of unwanted variation at the same time. The method constructs a generalized linear model (GLM) for each gene, using UMI counts as the response variable and sequencing depth as the explanatory variable. To handle the fact that different genes have different levels of expression, information is pooled across genes with similar abundances, resulting in more accurate parameter estimates.
 
 This regularization process yields residuals, which represent effectively normalized data values that are no longer correlated with sequencing depth.
 
@@ -926,7 +926,7 @@ seurat_integrated <- FindClusters(object = seurat_integrated,
 # Explore resolutions
 head(seurat_integrated@meta.data)
 
-# Assign identity of clusters
+# Assign the identity of clusters
 Idents(object = seurat_integrated) <- "integrated_snn_res.0.4"
 
 # Plot the UMAP
@@ -942,12 +942,12 @@ dev.off()
 
 #### Clustering quality control
 
-After clustering, we need to make sure that the assigned clusters are true representative of biological clusters (cell clusters) not due to technical or unwanted source of variation (like cell cycle stages). Also , in this step we need to identify cell type for each cluster based on the known cell type markers.
+After clustering, we need to make sure that the assigned clusters are true representative of biological clusters (cell clusters) not due to technical or unwanted source of variation (like cell cycle stages). Also, in this step, we need to identify cell type for each cluster based on the known cell type markers.
 
 -   Segregation of clusters by sample
 
 ``` r
-# Extract identity and sample information from seurat object to determine the number of cells per cluster per sample
+# Extract identity and sample information from Seurat object to determine the number of cells per cluster per sample
 
 library(dplyr)
 library(tidyr)
@@ -964,8 +964,8 @@ n_cells <- tidyr::spread(n_cells, ident, n)
 
 
 
-#Ading sample data from paper; we expect to see samples from same group have more or less similar number of cells in each cluster. 
-#So normal samples should show similar patters: SRR12603780, SRR12603781, and SRR12603788.
+#Ading sample data from paper; we expect to see samples from the same group have more or less similar number of cells in each cluster. 
+#So normal samples should show similar patterns: SRR12603780, SRR12603781, and SRR12603788.
 
 
 
@@ -993,7 +993,7 @@ head(n_cells)
 
 
 # UMAP of cells in each cluster by sample
-# This would allow us to see condition specefic clusters
+# This would allow us to see condition specific clusters
 png(filename = "umap_cluster_sample.png", width = 16, height = 8.135, units = "in", res = 300)
 DimPlot(seurat_integrated, 
         label = TRUE, 
@@ -1150,10 +1150,10 @@ markers <- FindAllMarkers(object = seurat_integrated,
 
 ```
 
-When we have two groups like tumor vs normal or invasive vs. non invasive identifying conserved markers is the best approach. In this way, we find DE genes for a given cluster in once condition (e.g. invasive) comparing the cluster against the rest of cluster in the same condition group. We do the same for that given cluster in the other condition (non-invasive). Finally the two list will be mergerd to give us the conserved marker for a given cluster. 
+When we have two groups like tumor vs normal or invasive vs. non-invasive identifying conserved markers is the best approach. In this way, we find DE genes for a given cluster in one condition (e.g. invasive) by comparing the cluster against the rest of the cluster in the same condition group. We do the same for that given cluster in the other condition (non-invasive). Finally, the two lists will be merged to give us the conserved marker for a given cluster. 
 
 ```r
-# explecity set the defult object to normalized values
+# explecity set the default object to normalized values
 DefaultAssay(seurat_integrated) <- "RNA"
 
 
@@ -1309,7 +1309,7 @@ dev.off()
 ![violin_high_freq_basal_cells.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/violin_high_freq_basal_cells.png)
 
 
-So according to "basal cells" visualization, following clusters may show clusters of basal cells:
+So according to "basal cells" visualization, the following clusters may show clusters of basal cells:
 0, 2,3,9,10,14,17,18,19(?),20 and 21.
 
 
@@ -1501,14 +1501,14 @@ dev.off()
 ```
 ![umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/umap_with_label.png)
 
-OK then it's time to write the Seurat object for later analysis , if any:
+OK then it's time to write the Seurat object for later analysis, if any:
 
 ```R
 # Save final R object
 write_rds(seurat_integrated,
           path = "seurat_labelled.rds")      
 ```
-As final note I tried to assign cell types to clusters using scType tool, however there was no bladder tissue profile in their database. So the generated lables using this apporach should be only considered as a guide.
+As a final note I tried to assign cell types to clusters using the scType tool, however, there was no bladder tissue profile in their database. So the generated labels using this approach should be only considered as a guide.
 
 ```R
 # Cell maker assignemnt using scType
@@ -1573,7 +1573,7 @@ dev.off()
 
 # MIBC vs. NMIBC
 
-There are four NMIBC samples(SRR12603790,SRR12603789,SRR12603787,SRR12603786) and four MIBC samples(SRR12603785,SRR12603784,SRR12603783,SRR12603782) in the dataset. Comparing these two group against each other could have give clue on the invasion cell type signature.
+There are four NMIBC samples(SRR12603790,SRR12603789,SRR12603787,SRR12603786) and four MIBC samples(SRR12603785,SRR12603784,SRR12603783,SRR12603782) in the dataset. Comparing these two group against each other could have given a clue on the invasion cell type signature.
 
 
 ```r
@@ -1922,13 +1922,13 @@ dev.off()
 ![blca_umap_with_label.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/blca_umap_with_label.png)
 
 
-# Ananlysis considering cell super clusters
+# Ananlysis considering cell superclusters
 
-This section is based on what I can get from the paper, but I stay focused on cancer samples and will use harmony to do integration. Finally , I do trajectory analysis for all cells which identified as epithelial cells.
+This section is based on what I can get from the paper, but I stay focused on cancer samples and will use harmony to do integration. Finally, I do trajectory analysis for all cells which identified as epithelial cells.
 
-"Cells with UMI numbers <1000 or with over 10% mitochondrial-derived UMI counts were considered low-quality cells and were removed. In order to eliminate potential doublets, single cells with over 6000 genes detected were also filtered out. Finally, 52721 single cells remained, and they were applied in downstream analyses."
+"Cells with UMI numbers <1000 or with over 10% mitochondrial-derived UMI counts were considered low-quality cells and were removed. To eliminate potential doublets, single cells with over 6000 genes detected were also filtered out. Finally, 52721 single cells remained, and they were applied in downstream analyses."
 
-"Since sample from eight patients were processed and sequenced in batches, patient number was used to remove potential batch effect."
+"Since samples from eight patients were processed and sequenced in batches, the patient number was used to remove the potential batch effect."
 
 "epithelial (EPCAM+) cells; endothelial (CD31+) cells; two types of fibroblasts (COL1A1+)—iCAFs (PDGFRA+) and myo-CAFs (mCAFs) (RGS5+); B cells (CD79A+); myeloid cells (LYZ+); T cells (CD3D+); and mast cells (TPSAB1+)"
 
@@ -2073,11 +2073,11 @@ dev.off()
 
 
 
-#### Marker identification for the 8 superclsuters:
+#### Marker identification for the 8 superclusters:
 
 ```r
 #______________________________ All markers________________________________
-# Find markers for every cluster compared to all remaining cells, report only the positive ones
+# Find markers for every cluster compared to all remaining cells, and report only the positive ones
 markers <- FindAllMarkers(object = harmonized_seurat, 
                           only.pos = TRUE,
                           logfc.threshold = 0.25) 
@@ -2818,7 +2818,7 @@ dev.off()
 ```
 ![normal_labelled_epi.png](https://github.com/hamidghaedi/scRNA_seq-analysis/blob/main/images/normal_labelled_epi.png)
 
-## Trajectories of normal epothelial cells
+## Trajectories of normal epithelial cells
 
 ```r
 epi_seurat$clusters <- Idents(epi_seurat)
